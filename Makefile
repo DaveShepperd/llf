@@ -56,7 +56,7 @@ llf.ln : Makefile
 	$(CC) $(CFLAGS) -c -DFILE_ID_NAME=$(basename $<)_id $(SUPPRESS_FILE_ID) $<
 
 clean:
-	/bin/rm -f *.o *.lis llf vecextract core
+	/bin/rm -rf *.o *.lis llf vecextract core* Debug Release
 
 add_defs.o: add_defs.c add_defs.h memmgt.h
 err2str.o: err2str.c 
