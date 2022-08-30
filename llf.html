@@ -48,6 +48,19 @@
   {
       background-color: #D6EEEE;
   }
+	.Box
+	{
+			border: 2px solid black;
+			margin:4px;
+			padding: 4px;
+	}
+	.BTop
+	{
+			border-top: 2px dashed blue;
+			margin: 4px;
+			padding: 0px;
+			width: 30%;
+	}
   </style>
   </head>
   <body>
@@ -60,7 +73,7 @@
   Revisions through Aug 2022 on this version<br>
   </div>
   <p></p>
-  <div style="border: 2px solid black;margin:4px;padding: 4px">
+  <div class="Box">
   <em>Note from Dave Shepperd, 8/2022
   <p>
   There never were any release notes kept on this application so there is no record of what got changed when. It just is what it is.
@@ -90,301 +103,313 @@
     </em>
   </p>
   </div>
+  <div class="Box">
+    
+    <h2 id="Operating">Running LLF</h2>
   <p>
-  Working on docs. Look here later.
+  To run this utility on a Linux/Unix system:
+    </p>
+    <pre>
+      $ llf [options ...] [inputFile ...] [options ...]
+    </pre>
+    <p>	
+  There can be any number of inputFiles limited only by the shell. The input
+  files may be either .obj, .ol, .ob, .ln, .lb, .stb, .opt or .lib
+  format (either such as produced by compiliers and/or macxx assembler or in the
+    case of .opt, a text editor).
+  The file format is identified by the
+  file type characters:
+    </p>
+    <pre>
+       .obj  - indicates the old RT11 object file format (.LDA type).
+       .ol   - indicates the ASCII format (default if no type on input file)
+       .ob   - indicates the binary equivalent of .ol
+       .ln   - the same as .ol (previously llf'd)
+       .lb   - indicates the binary equivalent of .ln
+       .stb  - the same as .ob and .lb except symbols only
+       .opt  - indicates an option file
+       .lib  - indicates a library file
+    </pre>
+    <p>
+  Library and Option files can also be provided via the command line options
+    -opt=file and -lib=file respectively.
   </p>
-  <h2 id="Operating">Running LLF</h2>
-<p>
-To run this utility on a Linux/Unix system:
-  </p>
-  <pre>
-    $ llf [options ...] [inputFile ...] [options ...]
-  </pre>
-  <p>	
-There can be any number of inputFiles limited only by the shell. The input
-files may be either .obj, .ol, .ob, .ln, .lb, .stb, .opt or .lib
-format (either such as produced by compiliers and/or macxx assembler or in the
-  case of .opt, a text editor).
-The file format is identified by the
-file type characters:
-  </p>
-  <pre>
-     .obj  - indicates the old RT11 object file format (.LDA type).
-     .ol   - indicates the ASCII format (default if no type on input file)
-     .ob   - indicates the binary equivalent of .ol
-     .ln   - the same as .ol (previously llf'd)
-     .lb   - indicates the binary equivalent of .ln
-     .stb  - the same as .ob and .lb except symbols only
-     .opt  - indicates an option file
-     .lib  - indicates a library file
-  </pre>
-  <p>
-Library and Option files can also be provided via the command line options
-  -opt=file and -lib=file respectively.
-</p>
- <p>
-Only the first 5 characters are significant on any of the options,
-although any of them may be abbreviated to 1 or more characters.
-</p>
-<p>
-The -options can appear anywhere on the command line. The items listed
-in []'s are optional arguments to the particular option. Where option
-is one of ([] implies optional text):
-</p>
-<pre id="Options">
-  -[no]output[=name]   - select and name output file
-  -[no]map[=name]      - select and name map file
-  -[no]symbol[=name]   - select and name symbol file
-  -[no]stb[=name]      - select and name symbol table file
-  -option[=name]       - names an input option file
-  -library[=name]      - names an input library file
-  -[no]binary          - select binary format output file
-  -[no]cross           - select cross reference map file format
-  -[no]octal           - select octal map file format
-  -[no]obj             - select default input file type of .ob
-  -[no]relative        - select relative output file format
-  -[no]error           - force display of undefined symbols in -relative mode
-</pre>
-<p>
-Defaults are -out -nomap -nosym -nostb -bin -nocross
-             -nooctal -noobj -norel -noerr
-</p>
-<p>
-The output filename defaults to the same name as the first input file with
-output format and file types according to the following:
-</p>
-  <table style="width: 20%">
-    <tr><th>Extension</th><th>Selected options</th></tr>
-    <tr><td>.vlda</td><td>-bin and -norel</td>
-    <tr><td>.lb</td><td>-bin and -rel</td>
-    <tr><td>.hex</td><td>-nobin and -norel</td>
-    <tr><td>.ln</td><td>-nobin and -rel</td>
-  </table>
-  <p>
-The -map, -symbol and -stb files default to the same name as the -output file
-with file types of .map, .sym and .stb respectively.
+   <p>
+  Only the first 5 characters are significant on any of the options,
+  although any of them may be abbreviated to 1 or more characters.
   </p>
   <p>
-The command options descriptions:
+  The -options can appear anywhere on the command line. The items listed
+  in []'s are optional arguments to the particular option. Where option
+  is one of ([] implies optional text):
   </p>
-  <p id="opt_cross">
--cross - Cross references the global symbols used by filename and
-	lists them in the map file. Forces the -map option. In the filename
-	list, the first file listed is the one that defined the symbol
-	unless the symbol was undefined (indicated by a message).
-</p>
-  <p id="opt_binary">
--binary - Forces the output file format to be written in a special binary
-	format.
-  </p>
-  <p id="opt_obj">
--obj - causes the default input file type to be .ob instead of .ol.
-	That is, files are first attempted to be opened with a file type of
-	.ob and if a file-not-found condition exists, then they are again
-	attempted to be opened with a default file type of .ol.
-  </p>
-  <p id="opt_relative">
--relative - Output file is in a relative format. That is, the segments are
-	not located and global symbols may not be completely resolved. If
-	this option is selected, then the default output file type is changed
-	from .hex to .ln. The output can be run through LLF again to do the
-	final locate and format. If -binary is present, then the default
-	changes to .lb.
-  </p>
-  <p id="opt_error">
--error - Forces LLF to display undefined symbol and other messages that would
-	normally be suppressed during a -relative link. Use this if you need
-	a relative output but are not intending to re-link the output with
-	additional object modules or just want to be informed of any unresolved
-	global references.
-  </p>
-  <p id="opt_output">
--output[=name] - Allows you to specify an output file name that may be
-    different than the input filename(s). This option is defaulted and
-	the filename used is the same as the first non-library or non-option
-	file input. Note that the file is created in the current default
-	directory and not necessarily the directory that the input file(s)
-	are located in.
- </p>
-  <p id="opt_map">
--map[=name] - Specifies that LLF create a printable MAP file with the output
-    image statistics (such as segment placement and global symbol values).
-	The optional value allows for filename to be specified if different
-	than that of the output filename. Note that segment and symbol names
-	may be 32 characters in length but the rightmost characters may
-	be truncated on the link map in order to make a reasonable display
-	format. All the characters remain significant for linking purposes
-	regardless of what is displayed on the link map.
- </p>
-  <p id="opt_octal">
--octal - Specifies that all the values displayed in error messages and on the
-	link map be done using an octal radix. The segment and symbol name
-	fields may be further truncated to accomodate the longer length of
-	the 32 bit octal numbers.
- </p>
-  <p id="opt_symbol">
--symbol[=name] - Specifies that global symbols and their values should be
-    placed in the output file. If an optional value is placed on this
-	option, then a seperate file will be created with only the global symbols
-	in it. The symbol file will be created in tekhex format unless the
-	-binary option is present, in which case, the output will be in .ob
-	format. May not be used with the -relative option.
- </p>
-  <p id="opt_stb">
--stb=[name] - Creates a segment/symbol file that may be used in a later link
-    step. This file would contain only the resolved globals and located
-	segments. No code (user data) is placed in this file. (Functionally
-	identical to a -symbol file except that the STB file is suitable to
-	be used as input to LLF again where the -symbol files may be
-	TekHex files suitable only for downloading). May not be used with
-	the -relative option.
-</p>
-  <p id="opt_library">
--library=name - Specifies the name of a library file. Libraries are
-	processed in the order that they are encountered. If there are no
-	undefined globals at the time the library file is processed, then no
-	modules will be plucked from the library. If one or more modules are
-	plucked from the library, then the library will be continually
-	re-processed until no symbols are resolved by any module(s) in the
-	library.
-</p>
-  <p id="opt_option">
--option=name - Specifies the name of an option file. An option
-	file is an ASCII file that you can use to define global symbols and
-	locate segments and other specifics. The syntax of the OPTION file
-	follows.
-</p>
-  <h3 id="option_file">Option file contents</h3>
-  <p >
-        The contents of the option file is used to define global symbols
-        and set the locations of sections and other memory operations. It
-        uses basically the same rules as the "C" language in that white
-        space consists of spaces, tabs and newlines. White space must
-	seperate names from other names but otherwise is ignored. Comments
-	can appear on any line and are de-limited with double dashes (--)
-	or exclamation mark (!) and a newline. The C comment construct of "/*"
-	and "*/" can also be used. The case of any of the keywords is <b>NOT</b>
-	significant, but the case of the segment and global names <b>IS</b>
-	significant. Numbers are assumed to be decimal unless prefixed with a
-	pound sign (#) or '0x' which indicates hexidecimal. The C constant
-	declaration may also be used. That is constants are assumed to be decimal
-	unless preceeded with a leading 0, in which case, they are octal or
-	preceeded with a 0x to indicate hexidecimal. The main keyword (FILE,
-	LOCATE, etc.) is expected to be the first token on a newline and
-	everything after the closing parantheses to end of line is discarded.
-	Some examples:
-</p>
-  <pre>
-  FILE ( filename1 filename2 ... )   /* includes file(s) for input */
-  LIBRARY ( library1 library2 ... )  /* includes library(s) for input */
-  </pre>
-<p>
-	As with the command input, the default input file types are assumed to
-	be .ol or .ob and the default library file type is .LIB. Filenames
-	may be delimited with either commas (,) or white space and the files
-	and libraries are processed in the order in which they are specified
-	and in the same order as the option file is input in the command
-	string. For example: 
-</p>
-  <pre>
-      $ llf one two.opt three
-  </pre>
-<p>
-	where two.opt contains:
-</p>
-  <pre>
-      FILE (four five)
-      LIBRARY (six)
-      FILE (seven)
-  </pre>
-<p>
-	will cause the files to be processed as "one two four five six.lib seven three". 
-</p>
-  <h3 id="option_locate">LOCATE option</h3>
-  <pre>
-  LOCATE ( group_name : address_option ; ... )       !position a group or segment
-  LOCATE ( segment_name ... : address_option ; ... ) !at a specific address 
-                                                     !    or range of addresses
-  </pre>
-<p>
-	Where "group_name" refers to the name of a group and "segment_name"
-	refers to the name of a segment or section (there's no difference
-	between a section and a segment). The "address_option" can be one of
-	the following:
-</p>
-  <pre>
-      constant [additional_argument(s)]
-  </pre>
-<p>
-	Where "constant" is assumed to be a number and "additional_arguments"
-	can be one or more of the following:
-</p>
-  <pre>
-      TO constant
-      OUTPUT constant
-      NAME group_name
-  </pre>
-<p>
-	The "TO constant" construct instructs LLF to notify you if the
-	segment(s) you locate won't fit in the area specified. The
-	"OUTPUT constant" construct allows you to locate the segment(s)
-	at one address but place the data in a different area in the
-	output address space. The "NAME" option allows you to name a
-	group with other than the automatic "noname_xxx" name generator.
-	Examples: 
-</p>
-  <pre>
-      LOCATE ( DEFAULT_GROUP       : #1000 );
-      LOCATE ( $$one $$two $$three : #0100;
-               $$four $$five $$six : #0200 TO #02FF;
-               $code               : #8000 TO #DFFF OUTPUT #10000;
-               $tables1 $tables2   : #0C000 OUTPUT #1C000);
+  <pre id="Options">
+    -[no]output[=name]   - select and name output file
+    -[no]map[=name]      - select and name map file
+    -[no]symbol[=name]   - select and name symbol file
+    -[no]stb[=name]      - select and name symbol table file
+    -option[=name]       - names an input option file
+    -library[=name]      - names an input library file
+    -[no]binary          - select binary format output file
+    -[no]cross           - select cross reference map file format
+    -[no]octal           - select octal map file format
+    -[no]obj             - select default input file type of .ob
+    -[no]relative        - select relative output file format
+    -[no]error           - force display of undefined symbols in -relative mode
   </pre>
   <p>
-  What would happen with the above options is all the segments in DEFAULT_GROUP would be located starting at 0x1000. Segments $$one, $$two and $$three would be concatenated
-  in that order and the collection located starting at 0x100. The segments $$four, $$five and $$six would be concatenated in that order and located
-  starting at location 0x200 and an error will be emitted if they have grown over 0x2FF (that is, overlapped into 0x300). The segment $$code is located
-  beginning at location 0x8000 and cannot overlap into 0xE000 but the contents is placed in the output file starting with addresses 0x10000. The segments
-  $tables1 and #tables2 are concatenated and located at 0xC000 but they are placed in the output file starting with addresses 0x1C000.
+  Defaults are -out -nomap -nosym -nostb -bin -nocross
+               -nooctal -noobj -norel -noerr
   </p>
-<h3 id="option_declare">DECLARE option</h3>
-  <pre>
-    DECLARE ( symbol_name value, ...) !to define a global symbol
-  </pre>
   <p>
-	Where "symbol_name" is the global symbol you're defining and value
-	is the value to assign to the symbol. You cannot re-define an already
-	defined symbol nor can you create a symbol that isn't referenced in
-	any of the input files. Examples:
+  The output filename defaults to the same name as the first input file with
+  output format and file types according to the following:
   </p>
-  <pre>
-      DECLARE ( checksum #0123, FIVE 5, TEN 10 )
-  </pre>
-<h3 id="option_reserve">RESERVE option</h3>
-  <pre>
-  RESERVE ( address_option ... )  !to reserve an area of memory such that
-                                  !no segments will be placed there by the
-                                  !automatic placement mechanism.
-  </pre>
-<p>
-	Where "address_option" is any of the following:
-</p>
-  <pre>
-    constant              /* a specific single location */
-    BEFORE constant       /* all addresses below constant */
-    AFTER constant        /* all addresses above constant */
-    constant TO constant	/* all locations between the 2 constants */
-  </pre>
-<p>
-	Examples:
-	</p>
-  <pre>
-      RESERVE ( 0 TO #0FFF )    /* 0 to 0xFFF inclusive */
-      RESERVE ( 0x0630 )        /* location 0x630 only */
-      RESERVE ( AFTER 0100000 ) /* 0x8000-0xFFFFFFFF inclusive */
-      RESERVE ( BEFORE #0FFF )  /* 0-0xFFF inclusive */
-  </pre>
-  
+    <table style="width: 20%">
+      <tr><th>Extension</th><th>Selected options</th></tr>
+      <tr><td>.vlda</td><td>-bin and -norel</td>
+      <tr><td>.lb</td><td>-bin and -rel</td>
+      <tr><td>.hex</td><td>-nobin and -norel</td>
+      <tr><td>.ln</td><td>-nobin and -rel</td>
+    </table>
+    <p>
+  The -map, -symbol and -stb files default to the same name as the -output file
+  with file types of .map, .sym and .stb respectively.
+    </p>
+    <p>
+  The command options descriptions:
+    </p>
+    <p id="opt_cross">
+  -cross - Cross references the global symbols used by filename and
+    lists them in the map file. Forces the -map option. In the filename
+    list, the first file listed is the one that defined the symbol
+    unless the symbol was undefined (indicated by a message).
+  </p>
+    <p id="opt_binary">
+  -binary - Forces the output file format to be written in a special binary
+    format.
+    </p>
+    <p id="opt_obj">
+  -obj - causes the default input file type to be .ob instead of .ol.
+    That is, files are first attempted to be opened with a file type of
+    .ob and if a file-not-found condition exists, then they are again
+    attempted to be opened with a default file type of .ol.
+    </p>
+    <p id="opt_relative">
+  -relative - Output file is in a relative format. That is, the segments are
+    not located and global symbols may not be completely resolved. If
+    this option is selected, then the default output file type is changed
+    from .hex to .ln. The output can be run through LLF again to do the
+    final locate and format. If -binary is present, then the default
+    changes to .lb.
+    </p>
+    <p id="opt_error">
+  -error - Forces LLF to display undefined symbol and other messages that would
+    normally be suppressed during a -relative link. Use this if you need
+    a relative output but are not intending to re-link the output with
+    additional object modules or just want to be informed of any unresolved
+    global references.
+    </p>
+    <p id="opt_output">
+  -output[=name] - Allows you to specify an output file name that may be
+      different than the input filename(s). This option is defaulted and
+    the filename used is the same as the first non-library or non-option
+    file input. Note that the file is created in the current default
+    directory and not necessarily the directory that the input file(s)
+    are located in.
+   </p>
+    <p id="opt_map">
+  -map[=name] - Specifies that LLF create a printable MAP file with the output
+      image statistics (such as segment placement and global symbol values).
+    The optional value allows for filename to be specified if different
+    than that of the output filename. Note that segment and symbol names
+    may be 32 characters in length but the rightmost characters may
+    be truncated on the link map in order to make a reasonable display
+    format. All the characters remain significant for linking purposes
+    regardless of what is displayed on the link map.
+   </p>
+    <p id="opt_octal">
+  -octal - Specifies that all the values displayed in error messages and on the
+    link map be done using an octal radix. The segment and symbol name
+    fields may be further truncated to accomodate the longer length of
+    the 32 bit octal numbers.
+   </p>
+    <p id="opt_symbol">
+  -symbol[=name] - Specifies that global symbols and their values should be
+      placed in the output file. If an optional value is placed on this
+    option, then a seperate file will be created with only the global symbols
+    in it. The symbol file will be created in tekhex format unless the
+    -binary option is present, in which case, the output will be in .ob
+    format. May not be used with the -relative option.
+   </p>
+    <p id="opt_stb">
+  -stb=[name] - Creates a segment/symbol file that may be used in a later link
+      step. This file would contain only the resolved globals and located
+    segments. No code (user data) is placed in this file. (Functionally
+    identical to a -symbol file except that the STB file is suitable to
+    be used as input to LLF again where the -symbol files may be
+    TekHex files suitable only for downloading). May not be used with
+    the -relative option.
+  </p>
+    <p id="opt_library">
+  -library=name - Specifies the name of a library file. Libraries are
+    processed in the order that they are encountered. If there are no
+    undefined globals at the time the library file is processed, then no
+    modules will be plucked from the library. If one or more modules are
+    plucked from the library, then the library will be continually
+    re-processed until no symbols are resolved by any module(s) in the
+    library.
+  </p>
+    <p id="opt_option">
+  -option=name - Specifies the name of an option file. An option
+    file is an ASCII file that you can use to define global symbols and
+    locate segments and other specifics. The syntax of the OPTION file
+    follows.
+  </p>
+  </div>
+  <div class="Box">
+    <h3 id="option_file">Option file contents</h3>
+    <p >
+          The contents of the option file is used to define global symbols
+          and set the locations of sections and other memory operations. It
+          uses basically the same rules as the "C" language in that white
+          space consists of spaces, tabs and newlines. White space must
+    seperate names from other names but otherwise is ignored. Comments
+    can appear on any line and are de-limited with double dashes (--)
+    or exclamation mark (!) and a newline. The C comment construct of "/*"
+    and "*/" can also be used. The case of any of the keywords is <b>NOT</b>
+    significant, but the case of the segment and global names <b>IS</b>
+    significant. Numbers are assumed to be decimal unless prefixed with a
+    pound sign (#) or '0x' which indicates hexidecimal. The C constant
+    declaration may also be used. That is constants are assumed to be decimal
+    unless preceeded with a leading 0, in which case, they are octal or
+    preceeded with a 0x to indicate hexidecimal. The main keyword (FILE,
+    LOCATE, etc.) is expected to be the first token on a newline and
+    everything after the closing parantheses to end of line is discarded.
+    Some examples:
+  </p>
+    <pre>
+    FILE ( filename1 filename2 ... )   /* includes file(s) for input */
+    LIBRARY ( library1 library2 ... )  /* includes library(s) for input */
+    </pre>
+  <p>
+    As with the command input, the default input file types are assumed to
+    be .ol or .ob and the default library file type is .LIB. Filenames
+    may be delimited with either commas (,) or white space and the files
+    and libraries are processed in the order in which they are specified
+    and in the same order as the option file is input in the command
+    string. For example: 
+  </p>
+    <pre>
+        $ llf one two.opt three
+    </pre>
+  <p>
+    where two.opt contains:
+  </p>
+    <pre>
+        FILE (four five)
+        LIBRARY (six)
+        FILE (seven)
+    </pre>
+  <p>
+    will cause the files to be processed as "one two four five six.lib seven three". 
+  </p>
+  </div>
+  <div class="Box">
+    <h3 id="option_locate">LOCATE option</h3>
+    <pre>
+    LOCATE ( group_name : address_option ; ... )       !position a group or segment
+    LOCATE ( segment_name ... : address_option ; ... ) !at a specific address 
+                                                       !    or range of addresses
+    </pre>
+  <p>
+    Where "group_name" refers to the name of a group and "segment_name"
+    refers to the name of a segment or section (there's no difference
+    between a section and a segment). The "address_option" can be one of
+    the following:
+  </p>
+    <pre>
+        constant [additional_argument(s)]
+    </pre>
+  <p>
+    Where "constant" is assumed to be a number and "additional_arguments"
+    can be one or more of the following:
+  </p>
+    <pre>
+        TO constant
+        OUTPUT constant
+        NAME group_name
+        NOOUTPUT
+    </pre>
+  <p>
+    The "TO constant" construct instructs LLF to notify if the
+    segment(s) you locate won't fit in the area specified.<br>
+    The "OUTPUT constant" construct allows one to locate the segment(s)
+    at one address but place the data in a different area in the
+    output address space.<br>
+    The "NAME" option allows one to name a
+    group with other than the automatic "noname_xxx" name generator.<br>
+    The NOOUTPUT option instructs LLF to locate the sections as normal
+    but not include any of the section data in the output file.<br>
+    Examples: 
+  </p>
+    <pre>
+        LOCATE ( DEFAULT_GROUP       : #1000 );
+        LOCATE ( $$one $$two $$three : #0100;
+                 $$four $$five $$six : #0200 TO #02FF;
+                 $code               : #8000 TO #DFFF OUTPUT #10000;
+                 $tables1 $tables2   : #0C000 OUTPUT #1C000);
+    </pre>
+    <p>
+    What would happen with the above options is all the segments in DEFAULT_GROUP would be located starting at 0x1000. Segments $$one, $$two and $$three would be concatenated
+    in that order and the collection located starting at 0x100. The segments $$four, $$five and $$six would be concatenated in that order and located
+    starting at location 0x200 and an error will be emitted if they have grown over 0x2FF (that is, overlapped into 0x300). The segment $$code is located
+    beginning at location 0x8000 and cannot overlap into 0xE000 but the contents is placed in the output file starting with addresses 0x10000. The segments
+    $tables1 and #tables2 are concatenated and located at 0xC000 but they are placed in the output file starting with addresses 0x1C000.
+    </p>
+  </div>
+  <div class="Box">
+  <h3 id="option_declare">DECLARE option</h3>
+    <pre>
+      DECLARE ( symbol_name value, ...) !to define a global symbol
+    </pre>
+    <p>
+    Where "symbol_name" is the global symbol you're defining and value
+    is the value to assign to the symbol. You cannot re-define an already
+    defined symbol nor can you create a symbol that isn't referenced in
+    any of the input files. Examples:
+    </p>
+    <pre>
+        DECLARE ( checksum #0123, FIVE 5, TEN 10 )
+    </pre>
+  </div>
+  <div class="Box">
+  <h3 id="option_reserve">RESERVE option</h3>
+    <pre>
+    RESERVE ( address_option ... )  !to reserve an area of memory such that
+                                    !no segments will be placed there by the
+                                    !automatic placement mechanism.
+    </pre>
+  <p>
+    Where "address_option" is any of the following:
+  </p>
+    <pre>
+      constant              /* a specific single location */
+      BEFORE constant       /* all addresses below constant */
+      AFTER constant        /* all addresses above constant */
+      constant TO constant	/* all locations between the 2 constants */
+    </pre>
+  <p>
+    Examples:
+    </p>
+    <pre>
+        RESERVE ( 0 TO #0FFF )    /* 0 to 0xFFF inclusive */
+        RESERVE ( 0x0630 )        /* location 0x630 only */
+        RESERVE ( AFTER 0100000 ) /* 0x8000-0xFFFFFFFF inclusive */
+        RESERVE ( BEFORE #0FFF )  /* 0-0xFFF inclusive */
+    </pre>
+    
+  </div>
   <h2 id="misc">Gotchas</h2>
 <p>
 RT-11/RSX object files allow for global symbols and PSECTs to have the same name
@@ -399,98 +424,362 @@ Notice also that the use of .ASECT, .PSECT xx,ABS and/or .PSECT xx,BSE may
 result in warnings about segments being overlayed. This is because the BSE
 section(s) may be overlaying the .ASECT or .PSECT xx,ABS sections. 
 </p>
-  <h2 id="out_formats">Output file formats</h2>
-  <h3 id="out_tekhex">Extended TekHex (.hex) format</h3>
-<p>
-Extended TEKhex (.hex) format is an ASCII record containing one of the following:
-</p>
-  <pre>
-    %nnTcs...
-  </pre>
-<p>
-where:	% is the ASCII percent character (record sentinel).<br>
-	nn- is a 2 hex digit count of the number of bytes in the
-	     record excluding the percent character.<br>
-	T  - is the record type: 3 for symbol, 6 for data and
-	     8 for end of file (termination record will not have
-	     any data).<br>
-	cs - is a 2 digit hex number representing the sum, mod 256,
-	     of all the characters in the record, except the leading
-	     %, the checksum digits, and the end of line.<br>
-</p>
+  <div class="Box">
+    <h2 id="out_formats">Output file formats</h2>
+    <h3 id="out_tekhex">Extended TekHex (.hex) format</h3>
   <p>
-In Extended TEKhex, certain fields may vary in length from 2 to 17
-characters. This enables data compression by eliminating leading zeroes
-from numbers and trailing spaces from symbols. The first character of a
-variable length field is the length of the rest of the field. The digit
-0 indicates a length of 16 characters. There will be a variable number
-of these variable length fields following the checksum and their content
-varies according to the record type: 
-</p>
-  <pre>
-    %nn6cslldd... - Data block
-      ll    = 2-9 chars of load address
-      dd... = n pairs of chars of hex data
-  </pre>
-<pre>
-    %nn8csll   - termination record
-      ll = 2-9 chars of transfer address
-</pre>
-<pre>
-    %nn3ccvvss... - symbol record
-      vv = 2-17 chars of section name (LLF always writes 2S_)
-      ss = n x 5-27 chars of symbol definition:
-        1 char of symbol type (LLF always outputs an 
-          ASCII 2 = global scalar)
-        2-17 chars of symbol name
-        2-9 chars of symbol value (LLF resolves to 32 bits)
-</pre>
-<h3 id="out_vlda">VLDA (.VLDA) format</h3>
-  <p>
-  This format was formed as a deviation of the RT11 .LDA format once
-  we started using the VAX. The <b>V</b> in VLDA was for VAX version
-  of LDA.
-  </p>
-  First byte after count
-	identifes the record type. A value of 0 means the data is
-	binary load data. A value of 13 (decimal) means data is
-	transparent. That is, the text of the record (bytes 1-n)
-	are unspecified and are to be passed through unchanged.
-	This is typically used for symbol data records. All other
-	record types are ignored (these are object file format
-	records which should be irrelavent. For type 0 record,
-	bytes 1-4 are the target memory address and bytes 5-n
-	are the data. I.e.:
+  Extended TEKhex (.hex) format is an ASCII record containing one of the following:
   </p>
     <pre>
-		Bytes in file increasing this way --->
-		(c0 c1)00 a0 a1 a2 a3 dd ... dd
-		|    |  |  |  |  |  |  |______|___ (count - 5) bytes of data
-		|    |  |  |__|__|__|_____________ Address, least significant byte first
-		|    |  |_________________________ Record type 0
-		|____|____________________________ count of bytes in record (these bytes are not on VAX)
+      %nnTcs...
     </pre>
-<h3 id="output_ol">OL and LN output formats</h3>
   <p>
-  Look here sometime later.
+  where:	% is the ASCII percent character (record sentinel).<br>
+    nn- is a 2 hex digit count of the number of bytes in the
+         record excluding the percent character.<br>
+    T  - is the record type: 3 for symbol, 6 for data and
+         8 for end of file (termination record will not have
+         any data).<br>
+    cs - is a 2 digit hex number representing the sum, mod 256,
+         of all the characters in the record, except the leading
+         %, the checksum digits, and the end of line.<br>
   </p>
-<h3 id="output_ob">OB, LB and .STB output formats</h3>
-  <p>
-  Look here sometime later.
+    <p>
+  In Extended TEKhex, certain fields may vary in length from 2 to 17
+  characters. This enables data compression by eliminating leading zeroes
+  from numbers and trailing spaces from symbols. The first character of a
+  variable length field is the length of the rest of the field. The digit
+  0 indicates a length of 16 characters. There will be a variable number
+  of these variable length fields following the checksum and their content
+  varies according to the record type: 
   </p>
-  <h2 id="history">A Little History</h3>
-  <div>
-    <em>
-  <p>
-   LLF was written to replace the RT11 linker, LINKM, we had been using since about 1977 as well as the three utilities Link, Locate and Format
-   we at Atari coin-op were using with our 68000 cross development tools beginning sometime in the mid 1980's. We picked up the newly available
-   C compiler for VAX/VMS (finally) so I chose to write LLF in C. That made it easy to port it to the myriad of non-VAX systems we were using
-   at the time and started us on the path of future proofing our development tools. Besides that, the Link, Locate and Format tools were closed
-   source either from Greehills or Intermetrics and when run on the VAX were painfully slow. One poor soul had a project where just those three tools
-   alone took several hours to build their one project on their VAX 750 so it was an overnight task and a once per day build for them. We didn't
-   have that particular problem with any of our projects but it was clear those tools needed some work.
+    <pre>
+      %nn6cslldd... - Data block
+        ll    = 2-9 chars of load address
+        dd... = n pairs of chars of hex data
+    </pre>
+  <pre>
+      %nn8csll   - termination record
+        ll = 2-9 chars of transfer address
+  </pre>
+  <pre>
+      %nn3ccvvss... - symbol record
+        vv = 2-17 chars of section name (LLF always writes 2S_)
+        ss = n x 5-27 chars of symbol definition:
+          1 char of symbol type (LLF always outputs an 
+            ASCII 2 = global scalar)
+          2-17 chars of symbol name
+          2-9 chars of symbol value (LLF resolves to 32 bits)
+  </pre>
+  </div>
+  <div class="Box">
+  <h3 id="out_vlda">VLDA (.VLDA) format</h3>
+    <p>
+    This format was formed as a deviation of the RT11 .LDA format once
+    we started using the VAX. The <b>V</b> in VLDA was for VAX version
+    of LDA.
     </p>
-    </em>
+    First byte after count
+    identifes the record type. A value of 0 means the data is
+    binary load data. A value of 13 (decimal) means data is
+    transparent. That is, the text of the record (bytes 1-n)
+    are unspecified and are to be passed through unchanged.
+    This is typically used for symbol data records. All other
+    record types are ignored (these are object file format
+    records which should be irrelavent. For type 0 record,
+    bytes 1-4 are the target memory address and bytes 5-n
+    are the data. I.e.:
+    </p>
+      <pre>
+      Bytes in file increasing this way --->
+      (c0 c1)00 a0 a1 a2 a3 dd ... dd
+      |    |  |  |  |  |  |  |______|___ (count - 5) bytes of data
+      |    |  |  |__|__|__|_____________ Address, least significant byte first
+      |    |  |_________________________ Record type 0
+      |____|____________________________ count of bytes in record (these bytes are not on VAX)
+      </pre>
+  </div>
+  <div class="Box">
+  <h3 id="output_ol">OL and LN output formats</h3>
+    <p>
+    Look here sometime later for complete details.
+    </p>
+    <p>
+    The ol and ln formats are plain ASCII text with various items per line and a line is delimited with a newline.
+    Each line starts with a keyword, an expression or a string of hexadecimal text enclosed with apostrophes. The ln
+    file is simply the output of a previous LLF process having used the -relative command line option. The list of
+    possibly keywords follows:
+    </p>
+    <table style="width: 40%">
+      <tr><th>Keyword</th><th>Function it performs</th></tr>
+      <tr><td><a href="#key_org">.org</a></td><td>Set the location counter</td></tr>
+      <tr><td><a href="#key_defg">.defg</a></a></td><td>Define a global symbol</td></tr>
+      <tr><td><a href="#key_seg">.seg</a></td><td>Establish a segment</td></tr>
+      <tr><td><a href="#key_len">.len</a></td><td>Indicate the segment length</td></tr>
+      <tr><td><a href="#key_ext">.ext</a></td><td>Mark a symbol as external</td></tr>
+      <tr><td><a href="#key_defg">.defl</a></td><td>Define a local symbol</td></tr>
+      <tr><td><a href="#key_id">.id</a></td><td>Provide details about what the object file is for</td></tr>
+      <tr><td><a href="#key_start">.start</a></td><td>Set the progam start address</td></tr>
+      <tr><td><a href="#key_abs">.abs</a></td><td>Set absolute location (must be based segment)</td></tr>
+      <tr><td><a href="#key_org">.aorg</a></td><td>Same as .org</td></tr>
+      <tr><td>.bgn</td><td>Ignored</td></tr>
+      <tr><td>.end</td><td>Ignored</td></tr>
+      <tr><td>.dcl</td><td>Ignored</td></tr>
+      <tr><td>.mark</td><td>Ignored</td></tr>
+      <tr><td><a href="#key_test">.test</a></td><td>Compute expression and emit error if result is true</td></tr>
+      <tr><td><a href="#key_bofftest">.bofftest</a></td><td>Compute expression and emit error if result is true</td></tr>
+      <tr><td><a href="#key_oortest">.oortest</a></td><td>Compute expression and emit error if result is true</td></tr>
+      <tr><td>.file</td><td>Ignored</td></tr>
+      <tr><td><a href="#key_dbgod">.dbgod</a></td><td>Specify the debug filename</td></tr>
+    </table>
+    <p>
+    Object code is indicated as a line of hexadecimal nibbles delimited with apostrophes:
+    </p>
+    <pre>
+    <code>'4DFA00224DFAFFE84DFA'</code>
+    </pre>
+    <p>
+    Expressions are strings of white space delimited terms in Reverse Polish Notation (RPN):
+    </p>
+    <pre>
+    <code>%2 70 + 65535 &:W</code>
+    </pre>
+    <p>
+    which means value of symbol or location of section ID '2' added to (decimal) 70 then the result and'ed with (decimal) 65535. The colon (:) signals the end of the expression which is always
+    computed as a 32 bit integer and the colon is followed by a single character which is called the tag. Except for the <b>x</b> and <b>X</b> tags which are followed by a
+    decimal number representing the number of bits in a bit mask. The various tag characters are:
+    </p>
+    <table style="width: 30%">
+      <tr><th>Tag</th><th>If expression result is 0x76543210</th></tr>
+      <tr><td><b>c</b></td><td>Stored as '10' (checked  0x00 &lt;= n &lt;= 0xFF)</td></tr>
+      <tr><td><b>b</b></td><td>Stored as '10' (checked -0x80 &lt;= n &lt;= 0xFF)</td></tr>
+      <tr><td><b>s</b></td><td>Stored as '10' (checked -0x80 &lt;= n &lt;= 0x7F)</td></tr>
+      <tr><td><b>j</b></td><td>Stored as '32107654'</td></tr>
+      <tr><td><b>J</b></td><td>Stored as '54761032'</td></tr>
+      <tr><td><b>l</b></td><td>Stored as '10325476'</td></tr>
+      <tr><td><b>L</b></td><td>Stored as '76543210'</td></tr>
+      <tr><td><b>w</b></td><td>Stored as '1032' (checked -0x10000 &lt;= n &lt;= 0xFFFF)</td></tr>
+      <tr><td><b>W</b></td><td>Stored as '3210' (checked -0x10000 &lt;= n &lt;= 0xFFFF)</td></tr>
+      <tr><td><b>i</b></td><td>Stored as '1032' (checked  -0x8000 &lt;= n &lt;= 0x7FFF)</td></tr>
+      <tr><td><b>I</b></td><td>Stored as '3210' (checked  -0x8000 &lt;= n &lt;= 0x7FFF)</td></tr>
+      <tr><td><b>u</b></td><td>Stored as '1032' (checked -0x10000 &lt;= n &lt;= 0xFFFF)</td></tr>
+      <tr><td><b>U</b></td><td>Stored as '3210' (checked -0x10000 &lt;= n &lt;= 0xFFFF)</td></tr>
+      <tr><td><b>x</b></td><td>(mask+7)/8 bytes stored after being clipped by (1&lt;&lt;mask)-1 little endian</td></tr>
+      <tr><td><b>X</b></td><td>(mask+7)/8 bytes stored after being clipped by (1&lt;&lt;mask)-1 big endian</td></tr>
+     </table>
+     <p>
+     In order for a symbol or segment value to appear in an expression, it must first be defined earlier in the
+     ol file. These defines are performed with the lines with the keywords <b>.seg</b>, <b>.defg</b>, <b>.defl</b> or <b>.ext</b>.
+     See those keyword options for details. All symbol and segment names are associated with an indetifier using the
+     synatx <b>{name}%id</b> where the <b>name</b> is the symbol or segment name and the <b>id</b> is a decimal
+     number. Each <b>id</b> in a given object file will be unique. In all subsequent expressions only the
+     <b>id</b> is used as a term in the expression and it uses the syntax of <b>%id</b>.
+     </p>
+     <div class="BTop"></div>
+     <h4 id="key_seg">Define a segment</h4>
+     <pre>
+     <code>.seg {.ABS.}%1 1 1 {abc}</code>
+     </pre>
+     <p>
+     The <b>.seg</b> function defines a segment. The line consists of 3 or 4 terms after the .seg keyword.
+     The first term is always the
+     segment <b>name</b> delimited with <b>{}</b>'s and its associated decimal <b>id</b> delimited with a
+     percent <b>%</b>. The second term describes the segment alignment as the power of 2. The third
+     term is the alignement as a power of 2 of data within the segment (usually, but not necessarily
+     the same but always &lt;=, as the segment alignment). The optional fourth term is a string
+     of onhe or more segment special characters delimited with <b>{}</b>'s. The special characters are:
+     <b>a</b>, <b>b</b>, <b>c</b>, <b>d</b>, <b>l</b>, <b>o</b>, <b>r</b>, <b>u</b> or <b>z</b>. Where:
+     </p>
+     <pre>
+     <code>
+     a - segment is pre-located in absolute memory
+     b - segment is based; same as 'a'
+     c - segment is to be overlayed with like named sections
+     d - segment contains data (as opposed to program code)
+     l - segment contains literal data (as opposed to program code or plain data; MACAS specific)
+     o - segment content is not to be output
+     r - segment is read-only
+     u - segment has no references to it
+     z - segment is zero page (MAC65 specific)
+     </code>
+     </pre>
+     <p>
+     In the above example the <b>.seg</b> defines the .ABS. segment with an id of 1 having
+     a segment alignment of 2<sup>1</sup> (i.e. 16 bit word) and also a data alignment within
+     the segment of the same 2<sup>1</sup> and it is absolute, based and to be overlayed
+     with like named segments in other object files.
+     </p>
+     <div class="BTop"></div>
+     <h4 id="key_len">Define length of a segment</h4>
+     <pre>
+     <code>.len %id expr</code>
+     </pre>
+     <p>
+     The <b>.len</b> function defines the length of a segment. The line consists of 2 terms after the .len keyword.
+     The first term is always the previously defined segment <b>id</b> delimited with a prefixed <b>%</b>.
+     The second term (could be an expression) sets the absolute segment length.
+     <div class="BTop"></div>
+   <h4 id="key_defg">Define a local or global symbol</h4>
+   <pre>
+   <code>.defg {for2}%4 %2 70 +</code>
+   <code>.defl {for3}%5 %2 70 +</code>
+   </pre>
+   <p>
+   The <b>.defg</b> or <b>.defl</b> function has at least two terms following the <b>.defg</b> keyword.
+   The first term is the symbol <b>name</b> delimited with {}'s followed by the decimal <b>id</b>
+    for that symbol prefixed with a %. Thereafter anywhere the %id is used in an expression
+    it is referencing this symbol.
+   The second and <b>n</b> terms comprise an expression of one or more terms that resolve
+   to an absolute integer and is assigned to the symbol. Note, if LLF is to build a relocatable
+   output, the symbol might remain unresolved in which case it will be defined with another
+   expression in the output file. In the above <b>.defg</b>example, the symbol <b>for2</b> is assigned
+   the id <b>4</b> and given the value of the result of adding decimal 70 to whatever
+   segment or symbol has previously been assigned the id of 2. The <b>.defg</b> function
+    defines the symbol as global meaning it will be output either as a debug symbol or
+    in a subsequent relocatable output file. The <b>.defl</b> defines the symbol as local
+    only to the current link process. It will not be included in the output file should output symbols be
+    asked for.
+   </p>
+     <div class="BTop"></div>
+     <h4 id="key_ext">Declare an external symbol reference</h4>
+     <pre>
+     <code>.ext {name}%id</code>
+     </pre>
+     <p>
+     The <b>.ext</b> function declares a symbol as being an external reference. The line consists of one term
+     after the .ext keyword. That term is the symbol <b>name</b> delimited with {}'s and its <b>id</b> prefixed
+     with a %. The symbol is expected to be defined in some other object file and if it isn't, LLF will report
+     it as undefined symbol error.
+     <div class="BTop"></div>
+     <h4 id="key_id">Declares some identification details about the object file</h4>
+     <pre>
+     <code>
+       .id "translator" "mac68k v10.27"
+       .id "mod" "t.ol"
+       .id "date" "Aug 28 2022 14:17:31"
+       .id "target" "68000"
+     </code>
+     </pre>
+     <p>
+     There may be multiple <b>.id</b> lines each with containing different details. They are all optional and
+     LLF will display the information in the map file for <b>translator</b>, <b>date</b> and <b>target</b> if
+     it is made available in the object file. Otherwise the information is ignored. The <b>mod</b> line presents
+     the filename of the file LLF already knows about, so it is ignored.
+     <div class="BTop"></div>
+     <h4 id="key_start">Declare the program start address</h4>
+     <pre>
+     <code>.start expression</code>
+     </pre>
+     <p>
+     The <b>.start</b> function establishes the program start location. The expression resolves to an absolute
+     value and is included in the output file as a special record.
+     <div class="BTop"></div>
+     <h4 id="key_abs">Establish absolute program counter location</h4>
+     <pre>
+     <code>.abs expression</code>
+     </pre>
+     <p>
+     The <b>.abs</b> function sets the current location counter to the
+     value of the expression. The value of the expression is expected to
+     resolve to an absolute number.
+     <div class="BTop"></div>
+     <h4 id="key_org">Establish program counter location</h4>
+     <pre>
+     <code>.org expression</code>
+     </pre>
+     <p>
+     The <b>.org</b> function sets the current location counter to the
+     value of the expression which may be and likely is relative to a
+     segment's starting location.
+     <div class="BTop"></div>
+     <h4 id="key_org">Establish program counter location</h4>
+     <pre>
+     <code>.aorg expression</code>
+     </pre>
+     <p>
+     The <b>.aorg</b> function sets the current location counter to the
+     value of the expression which may be and likely is relative to a
+     segment's starting location. The same as <b>.org</b>.
+     <div class="BTop"></div>
+     <h4 id="key_test">Execute a test and emit an error if result is non-zero</h4>
+     <pre>
+     <code>.test "message" expression:b</code>
+     </pre>
+     <p>
+     The <b>.test</b> function has two or more terms. The first is the text of
+     an error message delimited with double quotes and the others comprise
+     the expression which is to be evaluated and it is delimited
+     with the <b>:b</b> although the <b>:b</b> means nothing. If the result
+     is non-zero, LLF emits the <b>message</b> in the map file and to the
+     console. It does not insert anything in the object file. If the
+     result computes to 0, it does nothing.
+     <div class="BTop"></div>
+     <h4 id="key_bofftest">Execute a branch offset test and emit an error if result is non-zero</h4>
+     <pre>
+     <code>.bofftest "message" expression:b</code>
+     </pre>
+     <p>
+     The <b>.bofftest</b> function has two or more terms. The first is the text of
+     an error message delimited with double quotes and the others comprise
+     the expression which is to be evaluated and it is delimited
+     with the <b>:b</b> although the <b>:b</b> means nothing. If the result
+     is non-zero, LLF emits the <b>message</b> in the map file and to the
+     console. It does not insert anything in the object file. If the
+     result computes to 0, it does nothing. The <b>bofftest</b> function
+     is automatically inserted into the object file by macxx when branch
+     opcodes are encountered and the assembler is unable to compute the
+     branch offset. The text of the message will be something to identify
+     the location of the branch instruction causing a branch out of range.
+     <div class="BTop"></div>
+     <h4 id="key_oortest">Execute an out of range test and emit an error if result is non-zero</h4>
+     <pre>
+     <code>.oortest "message" expression:b</code>
+     </pre>
+     <p>
+     The <b>.oortest</b> function has two or more terms. The first is the text of
+     an error message delimited with double quotes and the others comprise
+     the expression which is to be evaluated and it is delimited
+     with the <b>:b</b> although the <b>:b</b> means nothing. If the result
+     is non-zero, LLF emits the <b>message</b> in the map file and to the
+     console. It does not insert anything in the object file. If the
+     result computes to 0, it does nothing. The <b>oortest</b> function
+     is automatically inserted into the object file by macxx when an
+     opcode is encountered such that one or more of the operands have to
+     be merged with the CPU's opcode and the assembler is unable to figure
+     them out itself. If the result of the computation results in a
+     non-zero, it means the resulting opcode itself would either become
+     corrupt or it won't assemble into the desired bit pattern so the
+     error message will contain some information to identify where exactly
+     the source of problem may be found (such as filename and line number).
+     <div class="BTop"></div>
+     <h4 id="key_dbgod">Identify the filename of a debug file</h4>
+     <pre>
+     <code>.dbgod "filename" "version"</code>
+     </pre>
+     <p>
+     The <b>.dbgod</b> function has two terms. Both are text strings delimited
+     with double quotes. The first is the text of a filename pointing to a file
+     containing the debug records. The second is the version of the file's contents.
+    </div> <!-- enclosed box -->
+  <div class="Box">
+  <h3 id="output_ob">OB, LB and .STB output formats</h3>
+    <p>
+    Look here sometime later.
+    </p>
+    <h2 id="history">A Little History</h3>
+    <div>
+      <em>
+    <p>
+     LLF was written to replace the RT11 linker, LINKM, we had been using since about 1977 as well as the three utilities Link, Locate and Format
+     we at Atari coin-op were using with our 68000 cross development tools beginning sometime in the mid 1980's. We picked up the newly available
+     C compiler for VAX/VMS (finally) so I chose to write LLF in C. That made it easy to port it to the myriad of non-VAX systems we were using
+     at the time and started us on the path of future proofing our development tools. Besides that, the Link, Locate and Format tools were closed
+     source either from Greehills or Intermetrics and when run on the VAX were painfully slow. One poor soul had a project where just those three tools
+     alone took several hours to build their one project on their VAX 750 so it was an overnight task and a once per day build for them. We didn't
+     have that particular problem with any of our projects but it was clear those tools needed some work.
+      </p>
+      </em>
+    </div>
   </div>
  </body>
 </html>
