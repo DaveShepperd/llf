@@ -424,11 +424,11 @@ Notice also that the use of .ASECT, .PSECT xx,ABS and/or .PSECT xx,BSE may
 result in warnings about segments being overlayed. This is because the BSE
 section(s) may be overlaying the .ASECT or .PSECT xx,ABS sections. 
 </p>
-  <div class="Box">
     <h2 id="out_formats">Output file formats</h2>
-    <h3 id="out_tekhex">Extended TekHex (.hex) format</h3>
+  <div class="Box">
+    <h3 id="out_tekhex">Extended TekHex: .hex and .sym formats</h3>
   <p>
-  Extended TEKhex (.hex) format is an ASCII record containing one of the following:
+  Extended TEKhex (.hex and .sym) format is an ASCII record containing one of the following:
   </p>
     <pre>
       %nnTcs...
@@ -442,7 +442,7 @@ section(s) may be overlaying the .ASECT or .PSECT xx,ABS sections.
          any data).<br>
     cs - is a 2 digit hex number representing the sum, mod 256,
          of all the characters in the record, except the leading
-         %, the checksum digits, and the end of line.<br>
+         %, the two checksum digits, and the end of line.<br>
   </p>
     <p>
   In Extended TEKhex, certain fields may vary in length from 2 to 17
@@ -455,22 +455,63 @@ section(s) may be overlaying the .ASECT or .PSECT xx,ABS sections.
   </p>
     <pre>
       %nn6cslldd... - Data block
-        ll    = 2-9 chars of load address
+        ll    = 1 char of number of chars in load address followed by
+                1-8 chars of load address big endian order, leading zeros suppressed
         dd... = n pairs of chars of hex data
     </pre>
   <pre>
       %nn8csll   - termination record
-        ll = 2-9 chars of transfer address
+        ll = 1 char of number of chars in transfer address followed by
+             1-8 chars of transfer address big endian order, leading zeros suppressed
   </pre>
   <pre>
       %nn3ccvvss... - symbol record
-        vv = 2-17 chars of section name (LLF always writes 2S_)
+        vv = 1 character of length of section name (0=16)
+             1-16 chars of section name (LLF always writes 2S_ for 'vv')
         ss = n x 5-27 chars of symbol definition:
-          1 char of symbol type (LLF always outputs an 
-            ASCII 2 = global scalar)
-          2-17 chars of symbol name
-          2-9 chars of symbol value (LLF resolves to 32 bits)
+          1 char of symbol type (LLF puts a 1 for this = global scalar)
+          1 char of symbol name length (0=16)
+          1-16 chars of symbol name
+          1 char of symbol value length
+          1-8 chars of symbol value big endian order, leading zeros suppressed
   </pre>
+    <p>
+    The <b>.hex</b> output file produced by LLF contains just the code bytes (only record types 6 and 8). If the -sym command
+    line option is selected, it will also produce a <b>.sym</b> file which is also a TekHex formatted
+    file but contains only the segment and global symbol definitions (record types 3 and 8). Some examples:
+    </p>
+    <pre>
+    <code>
+    _____________________________________________Record sentinel
+    |  __________________________________________Record count: 0x2A = 42 characters
+    ||| _________________________________________Record type: 6 = data
+    ||||  _______________________________________Checksum bytes: 0x6C
+    |||||| ______________________________________Number of characters in load address: 2
+    |||||||  ____________________________________Load address: 0x45
+    |||||||||                                  __Data
+    |||||||||||||||||||||||||||||||||||||||||||
+    %2A66C24510555500460000007B004A004C00000000
+    
+    _____________________________Sentinel
+    | ___________________________Record Count: 0x1A = 26 characters
+    ||| _________________________Record Type: 3 = symbol
+    ||||  _______________________Record Checksum: 0xA4
+    |||||| ______________________Symbol name length: 2
+    |||||||  ____________________Symbol: S_ in this case
+    ||||||||| ___________________Symbol type: 1 (LLF always outputs a 1 here)
+    |||||||||| __________________Symbol name length: 3
+    |||||||||||   _______________Symbol name: foo
+    |||||||||||||| ______________Symbol value length: 3
+    |||||||||||||||   ___________Symbol value: 0x200
+    |||||||||||||||||| __________Symbol type: 1
+    ||||||||||||||||||| _________Symbol length: 4
+    ||||||||||||||||||||    _____Symbol name: for2
+    |||||||||||||||||||||||| ____Symbol value length: 2
+    |||||||||||||||||||||||||  __Symbol value:0x46
+    |||||||||||||||||||||||||||
+    %1A3A42S_13foo320014for2246
+    </code>
+    </pre>
   </div>
   <div class="Box">
   <h3 id="out_vlda">VLDA (.VLDA) format</h3>
@@ -764,8 +805,18 @@ section(s) may be overlaying the .ASECT or .PSECT xx,ABS sections.
   <div class="Box">
   <h3 id="output_ob">OB, LB and .STB output formats</h3>
     <p>
-    Look here sometime later.
+    The <b>.OB</b> and <b>.LB</b> files are the binary equivalent to the <b>.OL</b> and <b>.LN</b> respectively. They existed to help improve
+    both assembly and link performance. Producing text for the assembler output and parsing text for LLF input is something
+    the old computer systems had a hard time with and took too much time doing (we're talking minutes for really big
+    projects). With the computers we're using these days, it's probably best not to use these file types anymore. I'm not
+    sure those formats have been kept current with all the changes that occured over the many years of patches. They both
+    have the same record structure as a <b>.VLDA</b>.
     </p>
+    <p>
+    I don't remember what the <b>.STB</b> file was supposed to be for. I'm thinking it might be the same as an <b>.OB</b> file except just containing
+    symbol and segment definitions and locations. It has the same style as a <b>.VLDA</b>.
+    </div> <!-- enclosed box -->
+  <div class="Box">
     <h2 id="history">A Little History</h3>
     <div>
       <em>
