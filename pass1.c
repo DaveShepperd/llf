@@ -760,9 +760,11 @@ int chk_mdf(int flag, SS_struct *sym_ptr)
 /*
  * At entry:
  *	flag =  0 - testing a segment name
- *		1 - testing a symbol name
+ *		    1 - testing a symbol name
  *	        2 - testing a group name
- *	sym_ptr = pointer to ss block
+ *  sym_ptr = pointer to ss block
+ *  expr_stack has expression of symbol to be defined.
+ *
  * At exit:
  *	returns 0 if symbol multiply defined
  *		1 if symbol/segment ok
@@ -785,14 +787,30 @@ int chk_mdf(int flag, SS_struct *sym_ptr)
             err_msg(MSG_FATAL,emsg);
             return(0);
         }
-    case 0:
-    case 2:
-    case 8:
-    case 16:
-    case 20: return(1);  /* it's ok */
-    case 9: {
-            if (sym_ptr->ss_fnd == current_fnd) return(1); /* ok if same file */
-            sprintf(emsg,
+	case 0:
+		/* Fall through to 2 */
+	case 2:
+		/* Fall through to 8 */
+	case 8:
+		/* Fall through to 16 */
+	case 16:
+		/* Fall through to 20 */
+    case 20:
+		return(1);  /* it's ok */
+    case 9:
+		{
+			/* Testing a symbol. */
+            if (sym_ptr->ss_fnd == current_fnd)
+				return(1); /* ok if same file */
+			if (    sym_ptr->ss_exprs && sym_ptr->ss_exprs->len == 1 && sym_ptr->ss_exprs->ptr->expr_code == EXPR_VALUE
+				 && expr_stack_ptr == 1
+				 && expr_stack[0].expr_code == EXPR_VALUE
+			   )
+			{
+				/* values are assigned the same, so must be absolute so it's ok */
+				return 1;
+			}
+			sprintf(emsg,
                     "Multiple definition of {%s}, attempted in file %s,\n\t%s%s",
                     sym_ptr->ss_string,current_fnd->fn_buff,
                     "...previously defined in file ",sym_ptr->ss_fnd->fn_buff);
@@ -856,17 +874,21 @@ int f1_defg(int flag)
     struct ss_struct *ptr;
     if ((ptr = do_token_id(flag)) == 0) return(f1_eatit());
     if (options->cross)
-        if (flag != 0) do_xref_symbol(ptr,1);
-    if (!chk_mdf(1,ptr)) return(f1_eatit());
+	{
+        if (flag != 0)
+			do_xref_symbol(ptr,1);
+	}
+	if (exprs(-1) < 0)
+	{     /* get an expression */
+		bad_token(tkn_ptr,"Undefined expression");
+		return(0);
+	}
+    if (!chk_mdf(1,ptr))
+		return(f1_eatit());
     ptr->flg_symbol = 1;
     ptr->flg_defined = 1;    /* signal symbol found in .defg */
     ptr->flg_local = !flag;  /* signal symbol is local/global */
     ptr->ss_fnd = current_fnd;   /* record the actual file that defined it */
-    if (exprs(-1) < 0)
-    {     /* get an expression */
-        bad_token(tkn_ptr,"Undefined expression");
-        return(0);
-    }
     ptr->flg_exprs = 1;      /* signal that there's an expression */
     ptr->flg_nosym = current_fnd->fn_nosym;
     write_to_symdef(ptr);    /* write symbol stuff */
