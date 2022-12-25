@@ -50,6 +50,7 @@ in []'s are optional arguments to the qualifier;
 				filename=SYS$DISK:[]symbol_filename.SEC
 	 or if /VLDA is present          SYS$DISK:[]symbol_filename.OBJ
 	/WORK[=n]		/NOWORK			work file enable
+	/[NO]QUIET      /NOQUIET        suppress warnings about multiple defines from a .stb file.
 
 The following 2 qualifiers are local to the filename that they follow and
 indicate the type of file that the name is specifying:

@@ -31,9 +31,10 @@ Where option is one of ([] implies optional text):
 -[no]obj        - select default input file type of .ob
 -[no]relative   - select relative output file format
 -[no]error      - force display of undefined symbols in -relative mode
+-[no]quiet      - suppress warnings about multiple defines from a .stb file.
 
 Defaults are -out -nomap -nosym -nostb -bin -nocross
-             -nooctal -noobj -norel -noerr
+             -nooctal -noobj -norel -noerr -noquiet
 
 The output filename defaults to the same name as the first input file with
 output format and file types according to the following:

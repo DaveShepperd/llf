@@ -57,7 +57,8 @@
  * /LIBRARY - specifies that the filename preceeding the option is
  *	a library file.
  * /OPTIONS - specifies that the filename preceeding the option is an 
- *	option file (only 1 allowed)
+ *  option file (only 1 allowed)
+ *  /QUIET - don't report multiple definitions arising from a .stb file.
  * 
  ***********************************************************************/
 
@@ -126,6 +127,7 @@ struct cli_options *options = &cli_qualifiers;
 #define stb_desc	qual_tbl[14]
 #define bin_desc	qual_tbl[15]
 #define msr_desc	qual_tbl[16]
+#define quiet_desc	qual_tbl[17]
 
 #ifdef VMS
     #define FILENAME_LEN 256	/* maximum length of filename in chars	*/

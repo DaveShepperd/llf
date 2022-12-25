@@ -34,6 +34,6 @@ struct qual {
    int qualif;			/* value to .or. into cli_options */
 };
 extern struct qual qual_tbl[];
-extern int max_qual;
+extern const int max_qual;
 
 #endif /* _GCSTRUCT_H_ */

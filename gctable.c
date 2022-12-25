@@ -43,10 +43,11 @@ struct qual qual_tbl[] = {
     {0,1,0,1,0,1,0,0,OUT_FN_SEC,"SECTION",0,0},
     {0,1,0,1,0,1,0,0,OUT_FN_STB,"STB",0,0},
     {1,0,0,0,0,1,0,0,0,"BINARY",0,QUAL_VLDA},    /* no value on this option */
-    {1,0,0,0,0,1,0,0,0,"MISER",0,QUAL_MISER} /* no value on this option */
+    {1,0,0,0,0,1,0,0,0,"MISER",0,QUAL_MISER}, /* no value on this option */
+	{1,0,0,0,0,1,0,0,0,"QUIET",0,QUAL_QUIET}	/* no value on this option */
 };
 
-int max_qual = sizeof(qual_tbl)/sizeof(struct qual);
+const int max_qual = sizeof(qual_tbl)/sizeof(struct qual);
 
 #define DEFTYP(nam,string) char nam[] = {string};
 

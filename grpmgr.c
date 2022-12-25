@@ -253,7 +253,10 @@ int add_to_group(
 {
     struct ss_struct **sym_list;
     struct seg_spec_struct *seg_ptr;
-    if (!chk_mdf(0,sym_ptr)) return TRUE; /* exit if multiple definitions */
+    if (!chk_mdf(0,sym_ptr,0))
+	{
+		return TRUE; /* exit if multiple definitions */
+	}
     if ((seg_ptr=sym_ptr->seg_spec) == 0)
     {
         if ((seg_ptr=get_seg_spec_mem(sym_ptr)) == 0) return FALSE;

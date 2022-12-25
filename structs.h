@@ -35,6 +35,7 @@ typedef struct cli_options {
    unsigned char option;	/* option switch input */
    unsigned char library;	/* library switch input */
    unsigned char miser;		/* miser mode */
+   unsigned char quiet;		/* quiet the warnings about multiple definitions */
 } CLI_options;
 
 #if !defined(offsetof)
@@ -52,6 +53,7 @@ typedef struct cli_options {
 #define QUAL_OPT   offsetof(CLI_options, option)
 #define QUAL_LIB   offsetof(CLI_options, library)
 #define QUAL_MISER offsetof(CLI_options, miser)
+#define QUAL_QUIET offsetof(CLI_options, quiet)
 
 extern CLI_options *options;	/* declare command options */
 
@@ -200,7 +202,7 @@ extern void insert_id( long id, SS_struct *id_ptr);
 extern SEG_spec_struct *get_seg_spec_mem( SS_struct *sym_ptr);
 extern SS_struct *get_symbol_block( int flag );
 extern SS_struct **find_seg_in_group(SS_struct *, SS_struct **);
-extern int chk_mdf(int flag, SS_struct *sym_ptr);
+extern int chk_mdf(int flag, SS_struct *sym_ptr, int quietly);
 extern void outseg_def(SS_struct *sym_ptr, unsigned long len, int based );
 
 typedef struct grp_struct {

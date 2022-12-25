@@ -482,7 +482,10 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
                 curr_pc = 0;
                 if (noname == 0) no_name_seg = sym_ptr;
                 last_txt_org = last_txt_end = 0;    /* reset the offset */
-                if (!chk_mdf(0,sym_ptr)) continue;
+                if (!chk_mdf(0,sym_ptr,0))
+				{
+					 continue;
+				}
                 if ((seg_ptr=sym_ptr->seg_spec) == 0)
                 {
                     if ((seg_ptr=get_seg_spec_mem(sym_ptr)) == 0) continue;
@@ -616,7 +619,10 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
                             continue;      /* ignore multiple defs if values == */
                         }
                     }
-                    if (!chk_mdf(1,sym_ptr)) continue; /* nfg */
+                    if (!chk_mdf(1,sym_ptr,0))
+					{
+						continue; /* nfg */
+					}
                     sym_ptr->flg_symbol = 1;     /* its a symbol */
                     expr_stack[0].expr_code = EXPR_SYM;  /* build an expression */
                     expr_stack[0].expr_value = gsdptr->gsdvalue;
@@ -1388,7 +1394,10 @@ void object( int fd )
                         curr_seg = sym_ptr = new_sym(2);
                         curr_pc = 0;
                         last_txt_org = last_txt_end = 0;  /* reset the offset */
-                        if (!chk_mdf(0,sym_ptr)) continue;
+                        if (!chk_mdf(0,sym_ptr,0))
+						{
+							continue;
+						}
                         if ((seg_ptr=sym_ptr->seg_spec) == 0)
                         {
                             if ((seg_ptr=get_seg_spec_mem(sym_ptr)) == 0) continue;
@@ -1529,33 +1538,50 @@ void object( int fd )
                             do_xref_symbol(sym_ptr,(vsym->vsym_flags&VSYM_DEF) != 0);
                         if (vsym->vsym_flags&VSYM_DEF)
                         {  /* if symbol being defined */
+							if ( (vsym->vsym_flags&VSYM_EXP) )
+							{
+								inp_vldaexp(inp_str+vsym->vsym_eoff); /* unpack expression into expr_stack[0] */
+							}
+							else
+							{
+								expr_stack_ptr = 1;
+								expr_stack[0].expr_code = EXPR_VALUE;
+								expr_stack[0].expr_value = vsym->vsym_value;
+							}
                             if (current_fnd->fn_stb)
                             { /* if from symbol file */
-                                if (sym_ptr->flg_defined && /* and old sym defined */
-                                    sym_ptr->flg_abs &&   /* and absolute */
-                                    (vsym->vsym_flags&VSYM_ABS) &&        /* and new sym absolute */
-                                    sym_ptr->ss_value == vsym->vsym_value)
-                                {
-                                    continue;    /* ignore multiple defs if values == */
-                                }
+								if ( sym_ptr->flg_defined && (vsym->vsym_flags&VSYM_ABS) )
+								{
+									/* symbol is already defined and new symbol is absolute */
+									if (   sym_ptr->flg_abs 					/* old symbol is absolute */
+										&& !sym_ptr->flg_exprs					/* and there is no expression */
+										&& sym_ptr->ss_value == vsym->vsym_value	/* and values match */
+									   )
+									{
+										continue;	/* values the same, so okay as is */
+									}
+									if (   sym_ptr->ss_exprs					/* old symbol is defined via an expression */
+										&& sym_ptr->ss_exprs->len == 1			/* with one term */
+										&& sym_ptr->ss_exprs->ptr->expr_code == EXPR_VALUE	/* which is absolute */
+										&& expr_stack_ptr == 1					/* and expression stack has one term */
+										&& expr_stack[0].expr_code == EXPR_VALUE /* and it's absolute */
+										&& sym_ptr->ss_exprs->ptr->expr_value == expr_stack[0].expr_value   /* and values match */
+									   )
+									{
+										continue;	/* values the same, so not an error */
+									}
+								}
                             }
-                            if (!chk_mdf(1,sym_ptr)) continue; /* nfg */
+                            if (!chk_mdf(1,sym_ptr,options->quiet))
+							{
+								continue; /* nfg */
+							}
                             sym_ptr->flg_symbol = 1;       /* its a symbol */
                             sym_ptr->ss_fnd = current_fnd; /* remember definition */
                             sym_ptr->flg_abs = (vsym->vsym_flags&VSYM_ABS) != 0;
                             sym_ptr->ss_value = vsym->vsym_value; /* in case its abs */
                             sym_ptr->flg_local = (vsym->vsym_flags&VSYM_LCL) != 0;
                             sym_ptr->flg_exprs = (vsym->vsym_flags&VSYM_EXP) != 0;
-                            if (sym_ptr->flg_exprs)
-                            {
-                                inp_vldaexp(inp_str+vsym->vsym_eoff); /* unpack expression */
-                            }
-                            else
-                            {
-                                expr_stack_ptr = 1;
-                                expr_stack[0].expr_code = EXPR_VALUE;
-                                expr_stack[0].expr_value = vsym->vsym_value;
-                            }
                             write_to_symdef(sym_ptr);
                             sym_ptr->flg_defined = 1;  /* set defined bit */
                             sym_ptr->flg_nosym = current_fnd->fn_nosym;

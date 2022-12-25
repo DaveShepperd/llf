@@ -756,13 +756,14 @@ int f1_eatit( void )
 /*******************************************************************
  * Check for multiple definition of symbol/segment
  */
-int chk_mdf(int flag, SS_struct *sym_ptr)
+int chk_mdf(int flag, SS_struct *sym_ptr, int quietly)
 /*
  * At entry:
  *	flag =  0 - testing a segment name
  *		    1 - testing a symbol name
  *	        2 - testing a group name
  *  sym_ptr = pointer to ss block
+ *  quietly = 0 if to squawk about multiple defines. 1=ignore multiple defines
  *  expr_stack has expression of symbol to be defined.
  *
  * At exit:
@@ -802,20 +803,33 @@ int chk_mdf(int flag, SS_struct *sym_ptr)
 			/* Testing a symbol. */
             if (sym_ptr->ss_fnd == current_fnd)
 				return(1); /* ok if same file */
-			if (    sym_ptr->ss_exprs && sym_ptr->ss_exprs->len == 1 && sym_ptr->ss_exprs->ptr->expr_code == EXPR_VALUE
-				 && expr_stack_ptr == 1
-				 && expr_stack[0].expr_code == EXPR_VALUE
-			   )
+			if ( expr_stack_ptr == 1 && expr_stack[0].expr_code == EXPR_VALUE )
 			{
-				/* values are assigned the same, so must be absolute so it's ok */
-				return 1;
+				/* Expression testing against is an absolute value */
+				if ( sym_ptr->flg_abs && sym_ptr->ss_value == expr_stack[0].expr_value )
+				{
+					/* Symbol is an absolute value */
+					return 1;	 /* values are assigned the same, so must be absolute so it's ok */
+				}
+				if (    sym_ptr->ss_exprs
+					&& sym_ptr->ss_exprs->len == 1
+					&& sym_ptr->ss_exprs->ptr->expr_code == EXPR_VALUE
+					&& sym_ptr->ss_exprs->ptr->expr_value == expr_stack[0].expr_value
+				   )
+				{
+					/* Symbol is an absolute value but still attached to a single term expression */
+					return 1;	 /* values are assigned the same, so must be absolute so it's ok */
+				}
 			}
-			sprintf(emsg,
-                    "Multiple definition of {%s}, attempted in file %s,\n\t%s%s",
-                    sym_ptr->ss_string,current_fnd->fn_buff,
-                    "...previously defined in file ",sym_ptr->ss_fnd->fn_buff);
-            err_msg(MSG_WARN,emsg);
-            return(0);
+			if ( !quietly )
+			{
+				sprintf(emsg,
+						"Multiple definition of {%s}, attempted in file %s,\n\t%s%s",
+						sym_ptr->ss_string,current_fnd->fn_buff,
+						"...previously defined in file ",sym_ptr->ss_fnd->fn_buff);
+				err_msg(MSG_WARN,emsg);
+			}
+			return 0;
         }
     case 1: {     /* new segment name matches old symbol name */
             new_type = sg_ptr;
@@ -883,7 +897,7 @@ int f1_defg(int flag)
 		bad_token(tkn_ptr,"Undefined expression");
 		return(0);
 	}
-    if (!chk_mdf(1,ptr))
+    if (!chk_mdf(1,ptr,0))
 		return(f1_eatit());
     ptr->flg_symbol = 1;
     ptr->flg_defined = 1;    /* signal symbol found in .defg */
@@ -918,7 +932,10 @@ int f1_len(int flag)
         err_msg(MSG_WARN,emsg);
     }
     if ((sym_ptr = do_token_id(2)) == 0) return(f1_eatit());
-    if (!chk_mdf(0,sym_ptr)) return(f1_eatit());
+    if (!chk_mdf(0,sym_ptr,0))
+	{
+		return(f1_eatit());
+	}
     switch (get_token(-1))
     {
     default: {
@@ -968,7 +985,10 @@ int f1_seg(int flag)
         bad_token(tkn_ptr,"Alignment constant expected here");
         token_value = 0;
     }
-    if (!chk_mdf(0,sym_ptr)) return(f1_eatit());
+    if (!chk_mdf(0,sym_ptr,0))
+	{
+		return(f1_eatit());
+	}
 #if 0
     if (new_symbol & 4) fseg_ptr = first_symbol->seg_spec;
 #endif
@@ -1347,7 +1367,10 @@ int f1_group( int flag )
         bad_token(tkn_ptr,"Alignment constant expected here");
         return(f1_eatit());
     }
-    if (!chk_mdf(2,grp_nam)) return(f1_eatit());
+    if (!chk_mdf(2,grp_nam,0))
+	{
+		return(f1_eatit());
+	}
     i = token_value;     /* save alignment factor */
     get_token(-1);       /* get the maxlen argument */
     if (token_type != TOKEN_const)
