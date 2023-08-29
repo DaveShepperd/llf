@@ -64,7 +64,7 @@ static struct NAM nam;
 static struct FAB fab;
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(S_ISDIR)
     #define S_ISDIR(mode) ((mode & 0xF000)==S_IFDIR)
 #endif
 

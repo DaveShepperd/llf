@@ -28,7 +28,7 @@
 #include "structs.h"		/* define structures */
 #include "header.h"		/* get our stuff */
 
-#ifdef ATARIST
+#if defined(ATARIST) || defined(WIN32)
     #define SIMPLE 1
 #endif
 
@@ -222,7 +222,7 @@ void com_time( short *out, long in )
 
 #if SIMPLE
     #ifdef ATARIST
-com_time( short *out, struct gemdos_date *curr, gemdos_date *last)
+void com_time( short *out, struct gemdos_date *curr, gemdos_date *last)
 {
     int hour,min,sec;
     struct tm *tm;
@@ -254,7 +254,7 @@ com_time( short *out, struct gemdos_date *curr, gemdos_date *last)
 
     #else				/* not ATARIST, must be MSDOS */
 
-com_time(short *out, long *curr, long *last)
+void com_time(short *out, long *curr, long *last)
 {
     int hour,min,sec;
     struct tm *curr_time;               /* current time */

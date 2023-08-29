@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include "vlda_structs.h"
 
-#ifdef __CYGWIN__
+#if defined(__CYGWIN__) || defined(WIN32)
 extern int fileno(FILE *fp);
 #endif
 
