@@ -48,11 +48,9 @@
     #include <sys/types.h>
     #include <sys/stat.h>
 
-    #if defined(M_XENIX) || defined(sun) || defined(SUN) || defined(M_UNIX) || defined(unix)
-        #define C_DELIM 	'-'	/* UNIX(tm) uses dashes as option delimiters */
+    #if defined(M_XENIX) || defined(sun) || defined(SUN) || defined(M_UNIX) || defined(unix) || defined(WIN32)
         #define C_PATH		'/'	/* pathname indicator */
     #else
-        #define C_DELIM 	'/'	/* VMS and MS-DOS use slash */
         #define C_PATH		'\\'	/* MS-DOS uses backslash as path */
     #endif
 #endif
