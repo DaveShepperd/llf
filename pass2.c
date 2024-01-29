@@ -842,14 +842,15 @@ int pass2(void)
 		case TMP_BOFF:
 		case TMP_TEST:
 			{
-				int condit, tmlen;
+				int condit, tmlen, savedType;
 				char *tmsg;
 				char *cmd_type;
 
+				savedType = tmp_ptr->tf_type;
 				cmd_type = "TEST";
-				if ( tmp_ptr->tf_type == TMP_BOFF )
+				if ( savedType == TMP_BOFF )
 					cmd_type = "BOFF";
-				else if ( tmp_ptr->tf_type == TMP_OOR )
+				else if ( savedType == TMP_OOR )
 					cmd_type = "OOR";
 				read_from_tmp();
 				if ( tmp_ptr->tf_type != TMP_ASTNG )
@@ -895,13 +896,13 @@ int pass2(void)
 					}
 					if ( condit )
 					{
-						if ( tmp_ptr->tf_type == TMP_TEST )
+						if ( savedType == TMP_TEST )
 						{
 							err_msg(MSG_ERROR, tmsg);
 						}
 						else
 						{
-							if ( tmp_ptr->tf_type == TMP_BOFF )
+							if ( savedType == TMP_BOFF )
 							{
 								strcpy(emsg, "Branch offset misaligned or out of range in ");
 							}

@@ -50,26 +50,28 @@ enum token {
    TOKEN_EOF    =127,	/* end of file */
 
    TMP_NUM    =0x7F,	/* constant value between -64 and + 63 */
-   TMP_NNUM   =0x80,	/* Not a number */
-   TMP_SIZE   =0x03,	/* bit mask for size bits */
-   TMP_ZERO   =0x00,	/* Value is 0 */
-   TMP_B8     =0x01,	/* Value is 8 bits */
-   TMP_B16    =0x02,	/* Value is 16 bits */
-   TMP_B32    =0x03,	/* value is 32 bits */
-   TMP_EOF    =0x80,	/* tmp file entry is end of file */
-   TMP_EXPR   =0x84,	/* tmp file entry is a expression */
-   TMP_ASTNG  =0x88,	/* ascii string follows */
-   TMP_TEST   =0x8C,	/* test expression follows */
-   TMP_TAG    =0x90,	/* expression tag */
-   TMP_ORG    =0x94,	/* change PC */
-   TMP_START  =0x98,	/* set the starting address */
-   TMP_BSTNG  =0x9C,	/* binary string follows */
-   TMP_BOFF   =0xC0,	/* branch offset test */
-   TMP_OOR    =0xC4,	/* operand out of range test */
-   
-/* Next codes in the sequence are 0xC0...0xFC (see EXPR_xxx below) */
+	TMP_NNUM   =0x80,	/* Not a number */
+	TMP_SIZE   =0x03,	/* bit mask for size bits */
+	TMP_ZERO   =0x00,	/* Value is 0 */
+	TMP_B8     =0x01,	/* Value is 8 bits */
+	TMP_B16    =0x02,	/* Value is 16 bits */
+	TMP_B32    =0x03,	/* value is 32 bits */
+	TMP_EOF    =0x80,	/* tmp file entry is end of file */
+	TMP_EXPR   =0x84,	/* tmp file entry is a expression */
+	TMP_ASTNG  =0x88,	/* ascii string follows */
+	TMP_TEST   =0x8C,	/* test expression follows */
+	TMP_TAG    =0x90,	/* expression tag */
+	TMP_ORG    =0x94,	/* change PC */
+	TMP_START  =0x98,	/* set the starting address */
+	TMP_BSTNG  =0x9C,	/* binary string follows */
 
-   TMP_LINK   =0xFF,	/* link to next temp segment */
+/* Codes in the sequence 0xA0...0xDC reserved for expression specific stuff (see EXPR_xxx below) */
+
+	TMP_SCOPE  =0xE4,	/* change procedure block */
+	TMP_STAB   =0xE8,	/* debug info record */
+	TMP_BOFF   =0xEC,	/* branch offset out of range test */
+	TMP_OOR    =0xF0,	/* tom/jerry operand value out of range test */
+	TMP_LINK   =0xFF,	/* link to next temp segment */
 
 /* WARNING... The following codes are actually 8  bits codes with bit 8 assumed
  * 	to be 1. Therefore these codes fit into the TMP_xxx range beginning
@@ -84,8 +86,6 @@ enum token {
    EXPR_TAG   =0x34,	/* expression tag follows */
    EXPR_IDENT =0x38,	/* symbol identifier follows */
    EXPR_LINK  =0x3C,	/* link to another expression */
-
-/* The next codes would be 0x40, 0x44...0x5C. 0x60 maps to TMP_xxx 0xE0 */
 
    OUTPUT_HEX =0,	/* output mode tekhex */
    OUTPUT_OL,		/* output mode relative ascii */
