@@ -28,6 +28,8 @@
 #include "structs.h"		/* define structures */
 #include "header.h"		/* get our stuff */
 
+#if !NO_TIMERS
+
 #if defined(ATARIST) || defined(WIN32)
     #define SIMPLE 1
 #endif
@@ -285,6 +287,8 @@ void com_time(short *out, long *curr, long *last)
     #endif
 #endif
 
+#endif	/* !NO_TIMERS */
+
 /****************************************************************************
  * Show times accumulated.
  */
@@ -296,7 +300,8 @@ void show_timer( void )
  *	times displayed in map file
  */
 {
-    char *str;
+	char *str;
+#if !NO_TIMERS
     long *p,*lp=0,*cp,itc;
 #if defined(VMS) || defined(M_XENIX) || defined(M_UNIX)
     long bufio,cputim,dirio;
@@ -305,10 +310,14 @@ void show_timer( void )
     long pageflts,ppgcnt,maxpp;
     maxpp = 0;
 #endif
+#endif	/* !NO_TIMERS */
     if (!map_fp) return;     /* nuthin to do if no map file */
-    if ((p=tim_top) == 0) return;    /* haven't done any lap_timer's */
+#if !NO_TIMERS
+	if ((p=tim_top) == 0) return;    /* haven't done any lap_timer's */
+#endif	/* !NO_TIMERS */
     map_subtitle=MEM_alloc(280); /* get some memory */
     misc_pool_used += 280;
+#if !NO_TIMERS
 #ifdef VMS
     sprintf(map_subtitle,
             "Run time statistics\n\n%-24s %6s %6s %6s %6s %11s   %11s\n%s%s\n",
@@ -457,6 +466,7 @@ void show_timer( void )
         puts_map(emsg,11);
         sym_stats();      /* display symbol table stats */
     }
+#endif	/* !NO_TIMERS */
     strcpy(map_subtitle,"Command line input:\n\n");
     if (map_line < 5)
     {
@@ -531,3 +541,4 @@ void show_timer( void )
     }
     return;
 }
+

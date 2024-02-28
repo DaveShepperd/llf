@@ -16,7 +16,7 @@ OBJ_FILES = $(A1) $(A2) $(A3)
 ALLH = version.h token.h structs.h header.h add_defs.h
 
 # Extra defines available #-DALIGNMENT=2 #-DBIG_ENDIAN #-DDEBUG_MALLOC #-DDEBUG_LINK
-DEFINES = -DLLF -DWIN32 -DEXTERNAL_PACKED_STRUCTS -D_ISOC99_SOURCE
+DEFINES = -DLLF -DWIN32 -DMSYS2 -DEXTERNAL_PACKED_STRUCTS -D_ISOC99_SOURCE
 
 MODE = -m32
 
@@ -24,8 +24,8 @@ INCS = -I.
 OPT = -O2
 DBG = #-g3
 CFLAGS = $(OPT) $(DBG) $(DEFINES) $(MODE) $(INCS) -std=c99 -Wall -ansi -pedantic -Wno-char-subscripts
-CC = mingw32-gcc
-RM = CMD /C DEL /Q /F
+CC = gcc
+RM = rm -f
 ECHO = echo
 
 C = $(CC) -c $(CFLAGS)

@@ -4,11 +4,11 @@
 
 A1 = llf.o gc.o gctable.o pass1.o pass2.o memmgt.o symbol.o reserve.o
 A2 = hashit.o insert_id.o lc.o grpmgr.o reloc.o symdef.o help.o 
-A3 = outx.o mapsym.o timer.o object.o qksort.o err2str.o add_defs.o
+A3 = outx.o mapsym.o object.o qksort.o err2str.o add_defs.o timer.o 
 
 AC1 = llf.c gc.c gctable.c pass1.c pass2.c memmgt.c symbol.c reserve.c
 AC2 = hashit.c insert_id.c lc.c grpmgr.c reloc.c symdef.c help.c 
-AC3 = outx.c mapsym.c timer.c object.c qksort.c err2str.c add_defs.c
+AC3 = outx.c mapsym.c object.c qksort.c err2str.c add_defs.c timer.c 
 
 OBJ_FILES = $(A1) $(A2) $(A3)
 

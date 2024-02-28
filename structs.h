@@ -300,14 +300,22 @@ extern void write_to_tmp( int typ, long itm_cnt, char *itm_ptr, int itm_siz );
 extern int exprs( int flag );
 
 extern char def_ob[],def_lb[],def_obj[],def_stb[];
-extern void lap_timer( char *str );
 extern void object( int fd );
 extern void pass1( void );
 extern int pass2( void );
 extern void outid( FILE *fp, int mode );
 extern void mapsym( void );
-extern void display_mem( void );
+#ifndef NO_TIMERS
+#define NO_TIMERS (1)
+#endif
 extern void show_timer( void );
+#if !NO_TIMERS
+extern void display_mem( void );
+extern void lap_timer( char *str );
+#else
+#define display_mem() do { ; } while (0)
+#define lap_timer(x) do { ; } while (0)
+#endif
 extern int lc( void );
 extern void outx_init( void );
 extern void seg_locate( void );
