@@ -756,7 +756,7 @@ static void disp_offset(void)
 /**********************************************************************
  * Display truncation error
  */
-static void trunc_err(long mask)
+static void trunc_err(long lowLimit, long highLimit, long written)
 /* 
  * At entry:
  *	mask - mask to compare against
@@ -765,25 +765,19 @@ static void trunc_err(long mask)
  *	last_xxx_ref - points to last seg/sym referenced in expression
  */
 {
-	char *s1, *s2;
+	char *s1,*sign;
+	if ( lowLimit < 0 )
+	{
+		sign = "-";
+		lowLimit = -lowLimit;
+	}
+	else
+		sign = "";
 	if ( options->octal )
-	{
-		s1 = "Truncation at location %010lo. Desired: %010lo, written: %06lo";
-		s2 = "Truncation at location %010lo. Desired: %010lo, written: %03lo";
-	}
+		s1 = "Truncation at location %lo. Expected %s%lo < %lo < %lo. Written: %lo";
 	else
-	{
-		s1 = "Truncation at location %08lX. Desired: %08lX, written: %04lX";
-		s2 = "Truncation at location %08lX. Desired: %08lX, written: %02lX";
-	}
-	if ( mask > 255 )
-	{
-		sprintf(emsg, s1, pass2_pc, token_value, token_value & mask);
-	}
-	else
-	{
-		sprintf(emsg, s2, pass2_pc, token_value, token_value & mask);
-	}
+		s1 = "Truncation at location %0lX. Expected %s%lX < %0lX < %0lX. Written: %0lX";
+	sprintf(emsg, s1, pass2_pc, sign, lowLimit, token_value, highLimit, written);
 	err_msg(MSG_WARN, emsg);
 	disp_offset();       /* display error offset */
 	return;
@@ -1019,7 +1013,7 @@ int pass2(void)
 					case 'w':
 						{
 							if ( (token_value > 65535) || (token_value < -65536) )
-								trunc_err(65535L);
+								trunc_err(-65536L, 65536L, token_value&65535);
 							ubp[flip] = (token_value)&0xFF;
 							ubp[flip ^ 1] = (token_value >> 8) & 0xFF;
 							i = 2;
@@ -1031,7 +1025,7 @@ int pass2(void)
 						{       /* short, low byte first */
 							i = 2;     /* 2 bytes */
 							if ( (token_value > 32767) || (token_value < -32768) )
-								trunc_err(65535L);
+								trunc_err(-32678, 32768, token_value&65535L);
 							ubp[flip] = (token_value)&0xFF;
 							ubp[flip ^ 1] = (token_value >> 8) & 0xFF;
 							break;
@@ -1042,7 +1036,7 @@ int pass2(void)
 						{       /* short, low byte first */
 							i = 2;     /* 2 bytes */
 							if ( token_value & 0xFFFF0000 )
-								trunc_err(65535L);
+								trunc_err(0,65536L,token_value&65535L);
 							ubp[flip] = (token_value)&0xFF;
 							ubp[flip ^ 1] = (token_value >> 8) & 0xFF;
 							break;
@@ -1051,15 +1045,15 @@ int pass2(void)
 						{       /* byte is the same as signed char */
 							i = 1;     /* char */
 							if ( (token_value > 255) || (token_value < -128) )
-								trunc_err(255L);
+								trunc_err(-128,256,token_value&255);
 							*ubp = (token_value)&0xFF;
 							break;
 						}
 					case 's':
 						{
-							i = 1;     /* char */
+							i = 1;     /* signed char */
 							if ( (token_value > 127) || (token_value < -128) )
-								trunc_err(255L);
+								trunc_err(-128,128,token_value&255L);
 							*ubp = (token_value)&0xFF;
 							break;
 						}
@@ -1067,7 +1061,7 @@ int pass2(void)
 						{       /* char */
 							i = 1;
 							if ( token_value & 0xFFFFFF00 )
-								trunc_err(255L);
+								trunc_err(0,256,token_value&255L);
 							*ubp = (token_value)&0xFF;
 							break;
 						}
