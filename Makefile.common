@@ -19,12 +19,7 @@ DEFINES = -DLLF -DM_UNIX -DEXTERNAL_PACKED_STRUCTS -D_ISOC99_SOURCE
 DEFINES += $(EXTRA_DEFINES)
 
 INCS = -I.
-ifndef OPT
-	OPT = -O2 -DNDEBUG
-endif
-ifndef DBG
-	DBG = 
-endif
+
 EXE =
 ifeq ($(MINGW),1)
 	EXE = .exe
