@@ -1,15 +1,15 @@
-# This is for an MSYS2 on Windows build
+# This is for a generic Linux build
 # For now, llf has to be built to run in 32 bit mode.
 
 HOST_MACH = -m32
 DELIM = '
 PiOS32 = 0
 LINUX = 1
-MSYS2 = 1
+MSYS2 = 0
 MINGW = 0
-EXTRA_DEFINES = -DMSYS2 -DWIN32
+EXTRA_DEFINES =
 EXTRA_CHKS =
-DBG = #-g
+DBG = #-g 
 OPT = -O2
 CC = gcc
 ECHO = /bin/echo -e
@@ -17,5 +17,3 @@ RM = rm -f
 RMDIR = rm -rf
 
 include Makefile.common
-
-

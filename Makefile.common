@@ -16,47 +16,56 @@ ALLH = version.h token.h structs.h header.h add_defs.h
 
 # Extra defines available #-DALIGNMENT=2 #-DBIG_ENDIAN #-DDEBUG_MALLOC #-DDEBUG_LINK 
 DEFINES = -DLLF -DM_UNIX -DEXTERNAL_PACKED_STRUCTS -D_ISOC99_SOURCE
-
-MODE = -m32
+DEFINES += $(EXTRA_DEFINES)
 
 INCS = -I.
-OPT = -O2
-DBG = #-g3
-CFLAGS = $(OPT) $(DBG) $(DEFINES) $(MODE) $(INCS) -std=c99 -Wall -ansi -pedantic -Wno-char-subscripts
-CC = gcc 
-CO = co
+ifndef OPT
+	OPT = -O2 -DNDEBUG
+endif
+ifndef DBG
+	DBG = 
+endif
+EXE =
+ifeq ($(MINGW),1)
+	EXE = .exe
+endif
+ifeq ($(MSYS2),1)
+	EXE = .exe
+endif
 
-ECHO = /bin/echo -e
+WARN = -std=c99 -Wall -ansi -pedantic -Wno-char-subscripts
+CFLAGS = $(OPT) $(DBG) $(WARN) $(DEFINES) $(HOST_MACH) $(INCS)
 
 C = $(CC) -c $(CFLAGS)
 D = $(CC) -c $(CFLAGS)
-L = $(CC) $(DBG) $(MODE)
+L = $(CC) $(DBG) $(HOST_MACH)
+MAKEFILE = Makefile.common
 
-default: llf vecextract
-	$(ECHO) "\tDone..."
+default: llf$(EXE) vecextract$(EXE)
+	$(ECHO) $(DELIM)    Done...$(DELIM)
 
 % :
-	@echo "Hmmm...Don't know how to make $@..."
+	@echo $(DELIM) Hmmm...Do not know how to make $@...$(DELIM)
 
 .SILENT:
 
-llf : $(OBJ_FILES) Makefile
-	@$(ECHO) "\tlinking..."
-	$L -o $@ $(filter-out Makefile,$^)
+llf$(EXE) : $(OBJ_FILES) $(MAKEFILE)
+	@$(ECHO) $(DELIM)    linking...$(DELIM)
+	$L -o $@ $(filter-out $(MAKEFILE),$^)
 
-vecextract : vecextract.c vlda_structs.h segdef.h
-	$(ECHO) "\tBuilding vecextract..."
+vecextract$(EXE) : vecextract.c vlda_structs.h segdef.h
+	$(ECHO) $(DELIM)    Building vecextract...$(DELIM)
 	$(CC) $(CFLAGS) -D_POSIX_C_SOURCE -o $@ $<
         
-llf.ln : Makefile
-	llf -OUT=llf -MAP=llf.tmap -err -rel -deb llfst -opt
+llf.ln : $(MAKEFILE)
+	llf -OUT=$@ -MAP=llf.tmap -err -rel -deb llfst -opt
 
 %.o : %.c
-	$(ECHO) "\tCompiling $<..."
+	$(ECHO) $(DELIM)    Compiling $<...$(DELIM)
 	$(CC) $(CFLAGS) -c -DFILE_ID_NAME=$(basename $<)_id $(SUPPRESS_FILE_ID) $<
 
 clean:
-	/bin/rm -rf *.o *.lis llf vecextract core* Debug Release
+	$(RM) *.o *.lis llf.ln llf$(EXE) vecextract$(EXE) core*
 
 add_defs.o: add_defs.c add_defs.h memmgt.h
 err2str.o: err2str.c 

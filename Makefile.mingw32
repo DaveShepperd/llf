@@ -1,0 +1,20 @@
+# This is for a MinGW-32 system running on Windows. Only been checked on a Windows 10 system.
+# For now, llf has to be built to run in 32 bit mode.
+
+HOST_MACH = -m32
+DELIM = ^
+PiOS32 = 0
+LINUX = 0
+MSYS2 = 0
+MINGW = 1
+EXTRA_DEFINES = -DMINGW -DWIN32
+EXTRA_CHKS =
+DBG = #-g
+OPT = -O2
+CC = mingw32-gcc
+ECHO = echo
+RM = cmd /c del /q/s
+RMDIR = cmd /c rmdir /q/s
+
+include Makefile.common
+

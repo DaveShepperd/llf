@@ -335,9 +335,23 @@
 			<F N="llf_linux.doc"/>
 			<F N="llf_vms.doc"/>
 			<F
-				N="Makefile"
+				N="Makefile.common"
+				Type="Makefile"/>
+			<F
+				N="Makefile.linux"
+				Type="Makefile"/>
+			<F
+				N="Makefile.mingw32"
+				Type="Makefile"/>
+			<F
+				N="Makefile.msys2"
+				Type="Makefile"/>
+			<F
+				N="Makefile.pi32"
 				Type="Makefile"/>
 			<F N="README.md"/>
 		</Folder>
 	</Files>
+	<List Name="RTE">
+	</List>
 </Project>
