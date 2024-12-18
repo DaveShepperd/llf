@@ -36,7 +36,7 @@ D = $(CC) -c $(CFLAGS)
 L = $(CC) $(DBG) $(HOST_MACH)
 MAKEFILE = Makefile.common
 
-default: llf$(EXE) vecextract$(EXE)
+default: llf$(EXE) vecextract$(EXE) 
 	$(ECHO) $(DELIM)    Done...$(DELIM)
 
 % :
@@ -48,10 +48,10 @@ llf$(EXE) : $(OBJ_FILES) $(MAKEFILE)
 	@$(ECHO) $(DELIM)    linking...$(DELIM)
 	$L -o $@ $(filter-out $(MAKEFILE),$^)
 
-vecextract$(EXE) : vecextract.c vlda_structs.h segdef.h
+vecextract$(EXE) : vecextract.c vlda_structs.h segdef.h version.h $(MAKEFILE)
 	$(ECHO) $(DELIM)    Building vecextract...$(DELIM)
 	$(CC) $(CFLAGS) -D_POSIX_C_SOURCE -o $@ $<
-        
+
 llf.ln : $(MAKEFILE)
 	llf -OUT=$@ -MAP=llf.tmap -err -rel -deb llfst -opt
 
