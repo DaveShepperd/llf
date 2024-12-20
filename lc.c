@@ -405,12 +405,15 @@ int lc_declare( void )
     while (1)
     {
         CHK_TOKEN(1,LC_TOK_STR,0,"Expected symbol name here");
-        if ((sym_ptr = sym_lookup(token_pool,token_value,0)) == 0)
-        {
-            sprintf(emsg,"DECLARED symbol {%s} not present in object code",
-                    token_pool);
-            err_msg(MSG_WARN,emsg);
-        }
+		if ( (sym_ptr = sym_lookup(token_pool, token_value, 0)) == 0 )
+		{
+			if ( !options->quiet )
+			{
+				sprintf(emsg,"DECLARED symbol {%s} not present in object code",
+						token_pool);
+				err_msg(MSG_WARN,emsg);
+			}
+		}
         lc_get_token(0,"%LLF- Premature EOF",0);
         if ((err_typ=chk_token(0,LC_TOK_CHAR,':',"Expected ':' here, assumed")) == EOF) return EOF;
         if (err_typ == EOL) return EOL;
@@ -436,12 +439,34 @@ int lc_declare( void )
             }
             else
             {
-                sym_ptr->ss_value = token_value;    /* set the new value */
-                sym_ptr->flg_defined = sym_ptr->flg_exprs = 1; /* set flags */
-                expr_stack[0].expr_code = EXPR_VALUE;
-                expr_stack[0].expr_value = token_value;
-                expr_stack_ptr = 1; /* one item on the stack */
-                write_to_symdef(sym_ptr);
+				int doIt=1;
+				if ( sym_ptr->flg_defined )
+				{
+					int complex=0;
+					
+					if ( sym_ptr->flg_exprs && sym_ptr->ss_exprs && (sym_ptr->ss_exprs->len != 1) )
+						complex = 1;
+					if ( (sym_ptr->ss_value != token_value) || complex )
+					{
+						if ( complex )
+							sprintf(emsg, "DECLARED symbol {%s} attempted to re-define from <complex> to absolute 0x%08lX. Ignored DECLARE.",
+									sym_ptr->ss_string, token_value);
+						else
+							sprintf(emsg, "DECLARED symbol {%s} attempted to re-define from 0x%08lX to 0x%08lX. Ignored DECLARE.",
+									sym_ptr->ss_string, sym_ptr->ss_value, token_value );
+						err_msg(MSG_WARN,emsg);
+						doIt = 0;
+					}
+				}
+				if ( doIt )
+				{
+					sym_ptr->ss_value = token_value;    /* set the new value */
+					sym_ptr->flg_defined = sym_ptr->flg_exprs = 1; /* set flags */
+					expr_stack[0].expr_code = EXPR_VALUE;
+					expr_stack[0].expr_value = token_value;
+					expr_stack_ptr = 1; /* one item on the stack */
+					write_to_symdef(sym_ptr);
+				}
             }          /* -- if */
         }             /* -- if */
     }                /* -- while */
