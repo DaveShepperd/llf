@@ -16,4 +16,4 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define REVISION "V10.16"		/* LLF version number */
+#define REVISION "V10.17"		/* LLF version number */

@@ -1049,6 +1049,34 @@ int pass2(void)
 							*ubp = (token_value)&0xFF;
 							break;
 						}
+					case 'z':
+						{
+							i = 1;     /* signed char branch offset */
+							if ( token_value == 0 || (token_value&1) )
+							{
+								const char *s1;
+								if ( !token_value )
+								{
+									if ( options->octal )
+										s1 = "Illegal branch offset of %lo at location %lo. Replaced with -2";
+									else
+										s1 = "Illegal branch offset of %lX at location 0x%X. Replaced with -2";
+								}
+								else
+								{
+									if ( options->octal )
+										s1 = "Illegal odd branch offset of %lo at location %lo. Replaced with -2";
+									else
+										s1 = "Illegal odd branch offset of 0x%lX at location 0x%X. Replaced with -2";
+								}
+								sprintf(emsg, s1, token_value, pass2_pc );
+								err_msg(MSG_ERROR, emsg);
+								disp_offset();       /* display error offset */
+								*ubp = -2;
+								break;
+							}
+						}
+						/* FALL THROUGH TO 's' */
 					case 's':
 						{
 							i = 1;     /* signed char */
