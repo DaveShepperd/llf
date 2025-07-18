@@ -30,7 +30,7 @@
 #define NULL 0
 
 #if 0
-extern long id_table_size;
+extern int32_t id_table_size;
 extern FN_struct *xfer_fnd;
 extern struct fn_struct *get_fn_pool();
 #endif
@@ -41,7 +41,7 @@ char *inp_str;          /* place to hold input text */
 int  inp_str_size;
 char *inp_ptr=0;        /* pointer to next place to get token */
 char *tkn_ptr=0;        /* pointer to start of token */
-long token_value;       /* value of converted token */
+int32_t token_value;       /* value of converted token */
 int  token_type;        /* token type */
 char token_end;         /* terminator char for string tokens */
 char token_curchr;      /* current token character being processed */
@@ -92,7 +92,7 @@ SEG_spec_struct *get_seg_spec_mem( SS_struct *seg_ptr)
 }
 /******************************************************************/
 
-long record_count;
+int32_t record_count;
 
 /******************************************************************
  * Pick up a line of text from the input file
@@ -217,7 +217,46 @@ void bad_token( char *ptr, char *msg )
     err_msg(MSG_ERROR,emsg);
 }
 /******************************************************************/
-
+#define DEBUG_DO_TOKEN_ID (0)
+
+#if 0 || DEBUG_DO_TOKEN_ID
+typedef struct
+{
+	int tknType;
+	const char *name;
+} TokenTypeNames_t;
+static const TokenTypeNames_t TokenNames[] = 
+{
+	{ TOKEN_cmd,	"TOKEN_cmd" },
+	{ TOKEN_ID,		"TOKEN_ID" },
+	{ TOKEN_ID_num,	"TOKEN_ID_num" },
+	{ TOKEN_const,	"TOKEN_const" },
+	{ TOKEN_oper,	"TOKEN_oper" },
+	{ TOKEN_expr_tag,"TOKEN_expr_tag" },
+	{ TOKEN_bins,	"TOKEN_bins" },
+	{ TOKEN_ascs,	"TOKEN_ascs" },
+	{ TOKEN_LB,		"TOKEN_LB" },
+	{ TOKEN_sep,	"TOKEN_sep" },
+	{ TOKEN_repf,	"TOKEN_repf" },
+	{ TOKEN_uc,		"TOKEN_uc" },
+	{ TOKEN_LINK,	"TOKEN_LINK" },
+	{ TOKEN_EOF,	"TOKEN_EOF" }
+};
+
+static const char *token_type_to_ascii(int token_type)
+{
+	int ii;
+	static char undefined[32];
+	for (ii=0; ii < n_elts(TokenNames);++ii)
+	{
+		if ( TokenNames[ii].tknType == token_type )
+			return TokenNames[ii].name;
+	}
+	snprintf(undefined,sizeof(undefined),"Undefined %d", token_type);
+	return undefined;
+}
+#endif
+
 /******************************************************************
  * Get the first char of the next token
  */
@@ -240,7 +279,7 @@ int get_token_c( void )
 #define TOKEN_E_char	5	/* single char (operator, etc) */
 #define TOKEN_E_decnum	6	/* decimal number */
 {
-    unsigned char c;
+    uint8_t c;
     while (1)
     {
         token_value = token_minus = 0;
@@ -575,7 +614,7 @@ int get_token( int part1)
     return(token_type);     /* return with token type */
 }
 
-static long sym_ptrptr;
+/* static uint32_t sym_idTableIdx; */
 
 /******************************************************************
  * Process ID type token. This token has the syntax of:
@@ -583,7 +622,7 @@ static long sym_ptrptr;
  * where the "[]" indicates an optional parameter. There may or may not
  * be whitespace seperating the paramters.
  */
-struct ss_struct *do_token_id( int flag )
+SS_struct *do_token_id( int flag, uint32_t *tableIndexP )
 /*
  * At entry:
  *	flag -  0 if not to insert into symbol table.
@@ -602,11 +641,17 @@ struct ss_struct *do_token_id( int flag )
  *	returns 0 if error else returns pointer to symbol block
  */
 {
-    struct ss_struct *sym_ptr;
-    if (token_type == TOKEN_ID_num && !flag)
+    SS_struct *sym_ptr;
+	uint32_t tableIndex;
+	
+#if DEBUG_DO_TOKEN_ID
+	printf("do_token_id(): flag=%d, token_type=%d(%s), token_value=%d, token_pool='%s', tableIndexP=%p\n",
+		   flag, token_type, token_type_to_ascii(token_type), token_value, token_pool, (void *)tableIndexP );
+#endif
+   if (token_type == TOKEN_ID_num && !flag)
     {
-        sym_ptrptr = id_table_base+token_value;
-        sym_ptr = *(id_table+sym_ptrptr);
+        tableIndex = id_table_base+token_value;
+        sym_ptr = id_table[tableIndex];
         if (sym_ptr != 0 && sym_ptr->ss_fnd == current_fnd)
         {
             if (sym_ptr->flg_defined)
@@ -620,17 +665,19 @@ struct ss_struct *do_token_id( int flag )
         }
         else
         {
-            *(id_table+sym_ptrptr) = sym_ptr = get_symbol_block(1);
+            id_table[tableIndex] = sym_ptr = get_symbol_block(1);
         }
         new_symbol = 1;
+		if ( tableIndexP )
+			*tableIndexP = tableIndex;
         return(sym_ptr);
     }
     if (token_type == TOKEN_ID)
     {
-/*
-      printf("Got TOKEN_ID for symbol %s. flag=%d, token_value = %ld\n",
+#if DEBUG_DO_TOKEN_ID
+      printf("do_token_id(): Found TOKEN_ID for symbol %s. flag=%d, token_value = %d\n",
           token_pool,flag,token_value);
-*/
+#endif
         if (flag == 2 && token_value > 0)
         {   /* if it's a segment name */
             *(token_pool+token_value) = ' ';   /* add a trailing space */
@@ -646,9 +693,9 @@ struct ss_struct *do_token_id( int flag )
             sym_ptr = get_symbol_block(1);
             new_symbol = 1;
         }
-/*
-      printf("\tsym_ptr=%08lX, new_symbol = %d\n",sym_ptr,new_symbol);
-*/
+#if DEBUG_DO_TOKEN_ID
+      printf("\tsym_ptr=%p, new_symbol = %d\n", (void *)sym_ptr, new_symbol);
+#endif
         switch (new_symbol)
         {
         case 5: {      /* symbol added and is a duplicate (segment) */
@@ -665,7 +712,8 @@ struct ss_struct *do_token_id( int flag )
                 }
             }
         case 0:  {     /* no symbol added */
-                if (options->cross) do_xref_symbol(sym_ptr,0);
+                if (qual_tbl[QUAL_CROSS].present)
+					do_xref_symbol(sym_ptr,0);
                 break;      /* done */
             }
         default: {
@@ -684,20 +732,26 @@ struct ss_struct *do_token_id( int flag )
     }
     if (token_type == TOKEN_ID_num)
     {
-        sym_ptrptr = id_table_base+token_value;
-        if (sym_ptrptr >= id_table_size)
+#if DEBUG_DO_TOKEN_ID
+      printf("do_token_id(): Found TOKEN_ID_num for symbol %s. flag=%d, token_value = %d, it_table_base=%d\n",
+          token_pool,flag,token_value, id_table_base);
+#endif
+        tableIndex = id_table_base+token_value;
+        if (tableIndex >= id_table_size)
         {
             sym_ptr = get_symbol_block(1);
             insert_id(token_value,sym_ptr);
         }
         else
         {
-            sym_ptr = *(id_table+sym_ptrptr);
+            sym_ptr = id_table[tableIndex];
             if (sym_ptr == 0)
             {
-                *(id_table+sym_ptrptr) = sym_ptr = get_symbol_block(1);
+                id_table[tableIndex] = sym_ptr = get_symbol_block(1);
             }
         }
+		if ( tableIndexP )
+			*tableIndexP = tableIndex;
         return(sym_ptr);
     }
     bad_token(tkn_ptr,"ID number expected here");
@@ -885,9 +939,10 @@ int f1_defg(int flag)
  *	.defl ID expression
  */
 {
-    struct ss_struct *ptr;
-    if ((ptr = do_token_id(flag)) == 0) return(f1_eatit());
-    if (options->cross)
+    SS_struct *ptr;
+    if ((ptr = do_token_id(flag,NULL)) == 0)
+		return(f1_eatit());
+    if (qual_tbl[QUAL_CROSS].present)
 	{
         if (flag != 0)
 			do_xref_symbol(ptr,1);
@@ -925,13 +980,15 @@ int f1_len(int flag)
 {
     struct ss_struct *sym_ptr;
     struct seg_spec_struct *seg_ptr;
+	
     if (token_type == TOKEN_ID)
     {
         sprintf(emsg,"Segment {%s} ID declared with a .len in %s",
                 token_pool,current_fnd->fn_buff);
         err_msg(MSG_WARN,emsg);
     }
-    if ((sym_ptr = do_token_id(2)) == 0) return(f1_eatit());
+    if ((sym_ptr = do_token_id(2,NULL)) == 0)
+		return(f1_eatit());
     if (!chk_mdf(0,sym_ptr,0))
 	{
 		return(f1_eatit());
@@ -978,7 +1035,8 @@ int f1_seg(int flag)
 #if 0
     struct seg_spec *fseg_ptr;
 #endif
-    if ((sym_ptr = do_token_id(2)) == 0) return(f1_eatit());
+    if ((sym_ptr = do_token_id(2,NULL)) == 0)
+		return(f1_eatit());
     get_token(-1);       /* get the alignment constant */
     if (token_type != TOKEN_const)
     {
@@ -1090,7 +1148,7 @@ int f1_seg(int flag)
             {
                 abs_group_nam = get_symbol_block(1);
                 abs_group_nam->ss_string = "Absolute_sections";
-                abs_group = get_grp_ptr(abs_group_nam,(long)0,(long)0);
+                abs_group = get_grp_ptr(abs_group_nam,0,0);
                 abs_group_nam->ss_fnd = current_fnd;
                 abs_group_nam->flg_based = 1;
                 abs_group_nam->seg_spec->sflg_absolute = 1;
@@ -1106,7 +1164,7 @@ int f1_seg(int flag)
                     base_page_nam = get_symbol_block(1);
                     base_page_nam->ss_string = "Zero_page_sections";
                     base_page_nam->ss_fnd = current_fnd;
-                    base_page_grp = get_grp_ptr(base_page_nam,(long)0,(long)0);
+                    base_page_grp = get_grp_ptr(base_page_nam,0,0);
                     base_page_nam->flg_based = 1;
                     base_page_nam->seg_spec->seg_maxlen = 256;
                     base_page_nam->seg_spec->sflg_zeropage = 1;
@@ -1162,14 +1220,15 @@ int f1_abs(int flag)
     struct ss_struct *sym_ptr;
     struct seg_spec_struct *seg_ptr;
     char *s;
-
+	uint32_t tableIndex;
+	
     if (token_type != TOKEN_ID_num)
     {
         bad_token(tkn_ptr,"Expected an ID number here");
         return f1_eatit();
     }
-    sym_ptrptr = id_table_base+token_value;
-    sym_ptr = *(id_table+sym_ptrptr);
+    tableIndex = id_table_base+token_value;
+    sym_ptr = id_table[tableIndex];
     if (sym_ptr == 0 || sym_ptr->ss_fnd != current_fnd)
     {
         bad_token(tkn_ptr,"Expected segment ID here");
@@ -1199,7 +1258,7 @@ int f1_abs(int flag)
     }
     if (sym_ptr->flg_based)
     {
-        s = options->octal ? "Segment {%s} previously based at %010lo" :
+        s = qual_tbl[QUAL_OCTAL].present ? "Segment {%s} previously based at %010lo" :
             "Segment {%s} previously based at %08lX";
         sprintf(emsg,s,sym_ptr->ss_string,seg_ptr->seg_base);
         err_msg(MSG_WARN,emsg);
@@ -1235,7 +1294,8 @@ int f1_ext(int flag)
  *	.ext ID
  */
 {
-    if (do_token_id(1) == 0) return(f1_eatit());
+    if (do_token_id(1,NULL) == 0)
+		return(f1_eatit());
     return(f1_eol());
 }
 
@@ -1275,9 +1335,9 @@ int f1_test(int flag)
         f1_eatit();
         return 1;
     }
-    write_to_tmp(tmp_opr[flag], (long)expr_stack_ptr,
+    write_to_tmp(tmp_opr[flag], expr_stack_ptr,
                  (char *)expr_stack,sizeof(struct expr_token));
-    write_to_tmp(TMP_ASTNG,(long)strlen(s),s,sizeof(char));
+    write_to_tmp(TMP_ASTNG,strlen(s),s,sizeof(char));
     MEM_free(s);         /* give back the memory */
     return(f1_eol());       /* next thing better be an eol */
 }
@@ -1357,10 +1417,11 @@ int f1_group( int flag )
  *	.group ID alignment_constant maxlen_constant group_list
  */
 {
-    long i;
+    int32_t i;
     struct ss_struct  *grp_nam,*sym_ptr;
     struct grp_struct *grp_ptr;
-    if ((grp_nam = do_token_id(1)) == 0) return(f1_eatit());
+    if ((grp_nam = do_token_id(1,NULL)) == 0)
+		return(f1_eatit());
     get_token(-1);       /* get the alignment constant */
     if (token_type != TOKEN_const)
     {
@@ -1381,7 +1442,8 @@ int f1_group( int flag )
     grp_ptr = get_grp_ptr(grp_nam,i,token_value);
     while (get_token(-1) == TOKEN_ID || token_type == TOKEN_ID_num)
     {
-        if ((sym_ptr = do_token_id(1)) == 0) return(f1_eatit());
+        if ((sym_ptr = do_token_id(1,NULL)) == 0)
+			return(f1_eatit());
         if (!add_to_group(sym_ptr,grp_nam,grp_ptr)) break;
     }
     return(f1_eol());
@@ -1415,7 +1477,7 @@ int f1_start( int flag )
             return(f1_eatit());
         }
         xfer_fnd = current_fnd;
-        write_to_tmp(TMP_START,(long)expr_stack_ptr,
+        write_to_tmp(TMP_START,expr_stack_ptr,
                      (char *)expr_stack,sizeof(struct expr_token));
         return(f1_eol());
     }
@@ -1442,7 +1504,7 @@ int f1_org(int flag)
     {
         expr_stack[expr_stack_ptr].expr_code = EXPR_OPER;
         expr_stack[expr_stack_ptr++].expr_value  = '+';
-        write_to_tmp(TMP_ORG,(long)expr_stack_ptr,
+        write_to_tmp(TMP_ORG,expr_stack_ptr,
                      (char *)expr_stack,sizeof(struct expr_token));
         return(f1_eol());
     }
@@ -1464,7 +1526,8 @@ int f1_aorg(int flag)
  *	.aorg ID constant
  */
 {
-    if (do_token_id(flag) == 0) return(f1_eatit());
+    if (do_token_id(flag,NULL) == 0)
+		return(f1_eatit());
     if (get_token(-1) == TOKEN_const)
     {
         expr_stack[0].expr_code = EXPR_VALUE;
@@ -1568,27 +1631,32 @@ int exprs( int flag)
  *	expression stack filled with expression
  */
 {
-    struct ss_struct *sym_ptr;
-    struct expr_token *exp;
+    SS_struct *sym_ptr;
+    EXPR_token *exp;
     exp = expr_stack;
-    if (flag < 0 ) get_token(flag);  /* get rest of token */
+    if (flag < 0 )
+		get_token(flag);  /* get rest of token */
     expr_stack_ptr = 0;
     while (1)
     {
         flag = 0;
-        if (expr_stack_ptr >= (sizeof(expr_stack)/sizeof(struct expr_token)))
+        if (expr_stack_ptr >= (sizeof(expr_stack)/sizeof(EXPR_token)))
             return(-1);
+		exp->ss_id = 0;		/* preclear these items */
+		exp->ss_ptr = NULL;
         switch (token_type)
         {
         case TOKEN_ID:
-        case TOKEN_ID_num: {
-                if ((sym_ptr = do_token_id(1)) == 0)
+        case TOKEN_ID_num:
+			{
+				uint32_t tableIndex;
+                if ((sym_ptr = do_token_id(1,&tableIndex)) == 0)
                 {  /* process token ID */
                     return(-1);
                 }
                 exp->expr_code = EXPR_IDENT;
                 exp->expr_value = 0;
-                exp->expr_ptr = (struct ss_struct *)sym_ptrptr;
+				exp->ss_id = tableIndex;
                 ++exp;
                 ++expr_stack_ptr;
                 break;
@@ -1674,10 +1742,10 @@ int exprs( int flag)
         case TOKEN_LB: {
                 exp->expr_code = (*token_pool == 'L') ? EXPR_L:EXPR_B;
                 get_token(-1);
-                if ((sym_ptr = do_token_id(1)) != 0)
+                if ((sym_ptr = do_token_id(1,NULL)) != 0)
                 {
                     exp->expr_value = 0;
-                    exp->expr_ptr = sym_ptr;
+                    exp->ss_ptr = sym_ptr;
                     ++exp;
                     ++expr_stack_ptr;
                 }
@@ -1726,7 +1794,7 @@ struct fn_struct *library( void )
             s = inp_ptr;
             while (((c = *s) != 0) && !isspace(c)) s++;
             *s++ = 0;
-            if ((sym_ptr=sym_lookup(inp_ptr,(long)(s-inp_str),0)) != 0)
+            if ((sym_ptr=sym_lookup(inp_ptr,(int32_t)(s-inp_str),0)) != 0)
             {
                 if (sym_ptr->flg_segment) continue; /* ignore segments */
                 if (sym_ptr->flg_defined) continue; /* already defined */
@@ -1803,11 +1871,17 @@ void pass1( void )
  */
 {
     int i, tkn_flg= 1,(*f)();
-    if (get_text() == EOF) return;
+    if (get_text() == EOF)
+		return;
     while (1)
     {
-        if (tkn_flg) get_token(-1);
+        if (tkn_flg)
+			get_token(-1);
         tkn_flg = 1;          /* assume not to get next token */
+#if 0
+		printf("pass1(): token_type=%d(%s), token_pool=%s, token_value=%d, inp_ptr=%s\n",
+			   token_type, token_type_to_ascii(token_type), token_pool, token_value, inp_ptr);
+#endif
         switch ((i=token_type))
         {
         case TOKEN_cmd: {
@@ -1839,7 +1913,7 @@ void pass1( void )
         case TOKEN_const: {
                 if (exprs(1) > 0)
                 {
-                    write_to_tmp(TMP_EXPR,(long)expr_stack_ptr,
+                    write_to_tmp(TMP_EXPR,expr_stack_ptr,
                                  (char *)expr_stack,sizeof(struct expr_token));
                     if (token_type != TOKEN_expr_tag)
                     {

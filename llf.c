@@ -50,14 +50,14 @@ struct fn_struct *current_fnd;  /* global current_fnd for error handlers */
 int warning_enable=1;       /* set TRUE if warnings are enabled */
 int info_enable;        /* set TRUE if info messages are enabled */
 int error_count[5];     /* error counts */
-short pass=0;           /* pass indicator flag */
+int16_t pass=0;           /* pass indicator flag */
 static char *months[] =
 { "Jan","Feb","Mar","Apr","May","Jun",
     "Jul","Aug","Sep","Oct","Nov","Dec"};
 char ascii_date[48];
 int option_input;       /* flag indicating optin file input */
 int debug=0;            /* debug status value */
-long misc_pool_used;
+int32_t misc_pool_used;
 
 #ifdef TIME_LIMIT
 /************************************************************************
@@ -65,7 +65,7 @@ long misc_pool_used;
  * VMS $GETTIM system service figuring that someone might assume it is
  * what is used to set the time limit and patch it out.
  */
-static void vmstime( long *tptr )
+static void vmstime( time_t *tptr )
 {
     int stat;
     stat = sys$gettim(tptr);
@@ -139,12 +139,12 @@ void err_msg(int severity, char *msg )
 }
 
 #ifdef TIME_LIMIT
-static long image_name_length,login_time[2];
+static int32_t image_name_length,login_time[2];
 
 struct item_list
 {
-    short buflen;
-    short item_code;
+    int16_t buflen;
+    int16_t item_code;
     char *bufadr;
     int *retlen;
 };
@@ -159,8 +159,6 @@ readonly static int item_terminator=0;
 
 time_t unix_time;
 int lc_pass;
-int gc_argc;
-char **gc_argv;
 
 /************************************************************************
  * LLF main entry.
@@ -179,19 +177,17 @@ int main( int argc, char *argv[] )
     struct seg_spec_struct *seg_ptr;
     struct fn_struct *nxt_fnd,*lib_fnd;
 #ifdef TIME_LIMIT
-    long timed_out,*link_time,systime[2],file_cnt;
+    int32_t timed_out,*link_time,systime[2],file_cnt;
 #endif
     struct tm *our_time;         /* current time (for sym/sec and map files */
 
     lap_timer(0);            /* mark start of image */
     inp_str = MEM_alloc(MAX_TOKEN*8);    /* get a buffer */
     inp_str_size = MAX_TOKEN*8;
-    gc_argc = argc;          /* pass argument pointers to GC */
-    gc_argv = argv;
     map_subtitle = MEM_alloc(80);
     if (map_subtitle == (char *)0) EXIT_FALSE;
     strcpy(map_subtitle,"LLF Version \001");
-    unix_time = (unsigned long)time(0l); /* get ticks since 1970 */
+    unix_time = time(NULL); /* get ticks since 1970 */
     our_time = localtime(&unix_time);    /* get current time of year */
     snprintf(ascii_date,sizeof(ascii_date),"\"%s %02d %4d %02d:%02d:%02d\"",
             months[our_time->tm_mon],our_time->tm_mday,our_time->tm_year+1900,
@@ -229,7 +225,7 @@ int main( int argc, char *argv[] )
         display_help();
         EXIT_FALSE;
     }
-    if (!getcommand()) /* process input command options */
+    if (!getcommand(argc,argv)) /* process input command options */
         EXIT_FALSE;
     lc_pass++;           /* next time do options differently */
     current_fnd = first_inp; /* get input first file name */
@@ -356,8 +352,9 @@ int main( int argc, char *argv[] )
             if (debug)
                 printf ("Processing library %s\n",current_fnd->fn_buff);
             nxt_fnd = library();       /* do library processing */
-            if (nxt_fnd == (struct fn_struct *)0) EXIT_FALSE;
-            if ((long)nxt_fnd != (long)current_fnd )
+            if (nxt_fnd == NULL)
+				EXIT_FALSE;
+            if (nxt_fnd != current_fnd )
             { /* add anything? */
                 lib_fnd = get_fn_struct();  /* yep, clone us at the end */
                 memcpy(lib_fnd,current_fnd,sizeof(struct fn_struct));
@@ -445,7 +442,7 @@ int main( int argc, char *argv[] )
             EXIT_FALSE;
         }
 #endif
-        if (options->vldadef)
+        if (qual_tbl[QUAL_VLDA].present)
         {
 #ifdef VMS
             abs_fp = fopen(output_files[OUT_FN_ABS].fn_buff,"w","rfm=var");
@@ -467,7 +464,7 @@ int main( int argc, char *argv[] )
         }
         outid(abs_fp,output_mode);
     }
-    if (options->rel != 0)
+    if (qual_tbl[QUAL_REL].present)
     {
         sec_fp = abs_fp;
         sym_fp = 0;
@@ -479,7 +476,7 @@ int main( int argc, char *argv[] )
             sym_fp = abs_fp;       /* assume no filename */
             if (output_files[OUT_FN_SYM].fn_buff)
             {
-                if (!options->vldadef)
+                if (!qual_tbl[QUAL_VLDA].present)
                 {
                     if ((sym_fp = fopen(output_files[OUT_FN_SYM].fn_buff,"w")) == 0)
                     {
@@ -500,7 +497,7 @@ int main( int argc, char *argv[] )
             sec_fp = sym_fp ? sym_fp:abs_fp;   /* assume no filename */
             if (output_files[OUT_FN_SEC].fn_buff)
             {
-                if (!options->vldadef)
+                if (!qual_tbl[QUAL_VLDA].present)
                 {
                     if ((sec_fp = fopen(output_files[OUT_FN_SEC].fn_buff,"w")) == 0)
                     {
@@ -570,7 +567,8 @@ int main( int argc, char *argv[] )
     }
     else
     {
-        if (options->rel != 0) outxsym_fp = abs_fp;
+        if (qual_tbl[QUAL_REL].present)
+			outxsym_fp = abs_fp;
         symbol_definitions(); /* define symbols */
     }
     if (make_od && output_mode == OUTPUT_VLDA)
@@ -593,7 +591,8 @@ int main( int argc, char *argv[] )
     lap_timer("Symbol sort/definitions");
     if (debug)
         printf ("Write MAP file\n");
-    if (options->rel) outxsym_fp = abs_fp;  /* be sure to pickup .externs */
+    if (qual_tbl[QUAL_REL].present)
+		outxsym_fp = abs_fp;  /* be sure to pickup .externs */
     mapsym();            /* finish up map, sec and sym files */
     if (sym_fp)
     {

@@ -63,7 +63,7 @@ extern int debug;
 extern int strlen(),strcpy();
 #endif
 #if !defined(VMS)
-extern long times();
+extern int32_t times();
 #endif
 extern struct tm *our_time; /* current time */
 extern int gc_argc;      /* arg count */
@@ -74,24 +74,24 @@ extern char **gc_argv;   /* arg value */
 static int item_count;      /* count of times to output */
 
 #if defined(M_XENIX) || defined(M_UNIX)
-static short usr_time_elem[4];
-static short sys_time_elem[4];
+static int16_t usr_time_elem[4];
+static int16_t sys_time_elem[4];
 #endif
 
-static short ela_time_elem[4];  /* time broken into elements */
+static int16_t ela_time_elem[4];  /* time broken into elements */
 
 #ifdef VMS
 struct jpi_struct
 {
-    short buf_len;       /* buffer length */
-    short jpi_itm;       /* JPI item	*/
+    int16_t buf_len;       /* buffer length */
+    int16_t jpi_itm;       /* JPI item	*/
     char *buf_ptr;       /* pointer to buffer */
     int *ret_len;        /* pointer to return length */
 };
 
-static long curr_time[2];   /* current time */
-static short cpu_time_elem[4];  /* time broken into elements */
-static long ten_thou = 10000;   /* divisor */
+static int32_t curr_time[2];   /* current time */
+static int16_t cpu_time_elem[4];  /* time broken into elements */
+static int32_t ten_thou = 10000;   /* divisor */
 
 static struct jpi_struct itm_lst[] = {
     {sizeof(int),JPI$_BUFIO,0,0},
@@ -103,7 +103,7 @@ static struct jpi_struct itm_lst[] = {
 };
 
 #endif
-static long *tim_top;
+static int32_t *tim_top;
 
 void display_mem( void )
 {
@@ -137,7 +137,7 @@ void lap_timer( char *strng )
  */
 {
     int cnt;
-    long *vp;
+    clock_t *vp;
     if (strng && !map_fp) return;    /* nuthin to do if no map file */
 #ifdef VMS
     cnt = sizeof(itm_lst)/sizeof(struct jpi_struct)-1    /* all time variables */
@@ -160,14 +160,14 @@ void lap_timer( char *strng )
         tqty = (item_count/10+1)*10;
         if (tim_top == 0)
         {
-            vp = (long *)MEM_calloc(tqty,sizeof(long)*cnt);
+            vp = (int32_t *)MEM_calloc(tqty,sizeof(clock_t)*cnt);
         }
         else
         {
-            vp = (long *)MEM_realloc(tim_top,(unsigned)(sizeof(long)*tqty*cnt));
-            misc_pool_used -= otq*cnt*sizeof(long);
+            vp = (int32_t *)MEM_realloc(tim_top,(unsigned)(sizeof(clock_t)*tqty*cnt));
+            misc_pool_used -= otq*cnt*sizeof(clock_t);
         }
-        misc_pool_used += tqty*cnt*sizeof(long);
+        misc_pool_used += tqty*cnt*sizeof(clock_t);
         tim_top = vp;
     }
     vp = item_count*cnt + tim_top;
@@ -187,7 +187,7 @@ void lap_timer( char *strng )
     }
 #endif
 #if SIMPLE
-    *vp++ = time((long *)0);         /* get current time in seconds */
+    *vp++ = time(NULL);         /* get current time in seconds */
 #endif
 #if defined(M_XENIX) || defined(M_UNIX)
     *vp++ = times(&start_time);      /* get current elapsed time */
@@ -199,9 +199,7 @@ void lap_timer( char *strng )
 }
 
 #ifdef VMS
-com_time(out,in)
-short *out;
-long in;
+void com_time(int16_t *out, int32_t in)
 {
     *out++ = in/360000;      /* hours */
     *out++ = (in % 360000)/6000; /* minutes */
@@ -212,7 +210,7 @@ long in;
 #endif
 
 #if defined(M_XENIX) || defined(M_UNIX)
-void com_time( short *out, long in )
+void com_time( int16_t *out, int32_t in )
 {
     *out++ =  in/(3600*TICKS);       /* hours */
     *out++ = (in % (3600*TICKS))/(60*TICKS); /* minutes */
@@ -224,7 +222,7 @@ void com_time( short *out, long in )
 
 #if SIMPLE
     #ifdef ATARIST
-void com_time( short *out, struct gemdos_date *curr, gemdos_date *last)
+void com_time( int16_t *out, struct gemdos_date *curr, gemdos_date *last)
 {
     int hour,min,sec;
     struct tm *tm;
@@ -256,7 +254,7 @@ void com_time( short *out, struct gemdos_date *curr, gemdos_date *last)
 
     #else				/* not ATARIST, must be MSDOS */
 
-void com_time(short *out, long *curr, long *last)
+void com_time(int16_t *out, int32_t *curr, int32_t *last)
 {
     int hour,min,sec;
     struct tm *curr_time;               /* current time */
@@ -300,14 +298,14 @@ void show_timer( void )
  *	times displayed in map file
  */
 {
-	char *str;
 #if !NO_TIMERS
-    long *p,*lp=0,*cp,itc;
+	char *str;
+    int32_t *p,*lp=0,*cp,itc;
 #if defined(VMS) || defined(M_XENIX) || defined(M_UNIX)
-    long bufio,cputim,dirio;
+    int32_t bufio,cputim,dirio;
 #endif
 #ifdef VMS
-    long pageflts,ppgcnt,maxpp;
+    int32_t pageflts,ppgcnt,maxpp;
     maxpp = 0;
 #endif
 #endif	/* !NO_TIMERS */
@@ -350,7 +348,12 @@ void show_timer( void )
     for (itc=0;itc<item_count;itc++)
     {
         cp = p;           /* remember our place */
-        if ((str = *(char **)p++) != (char *)0)
+		if
+#if SIMPLE || defined(VMS) || defined(M_XENIX)
+		    ((str = *(char **)p++))
+#else
+		    ( *p++ )
+#endif
         { /* point to string */
 #ifdef VMS
             bufio = *p++;
@@ -358,7 +361,8 @@ void show_timer( void )
             dirio = *p++;
             pageflts = *p++;
             ppgcnt = *p++;
-            if (ppgcnt > maxpp) maxpp = ppgcnt;
+            if (ppgcnt > maxpp)
+				maxpp = ppgcnt;
             bufio -= *lp++;
             cputim -= *lp++;
             dirio -= *lp++;
@@ -477,68 +481,54 @@ void show_timer( void )
         puts_map("\n",1);     /* write a blank line */
         puts_map(map_subtitle,2); /* write subtitle */
     }
-    while (1)
+    do
     {
-        char **argv,*s;
-        int i = gc_argc,emlen,arglen;
-        argv = gc_argv;
-        s = *++argv;      /* get pointer to first argument */
-        while (1)
+        char *cp;
+        int emlen, cmdLen;
+        cp = commandLine;      /* get pointer to first argument */
+		cmdLen = strlen(cp);
+        while ( cp < commandLine+cmdLen )
         {
-            str = emsg;        /* point to beginning of line */
-            emlen = 0;     /* length starts at 0 */
-            while ((arglen=strlen(s))+emlen < 128)
-            {
-                strcpy(str,s);
-                str += arglen;
-                *str++ = ' ';
-                emlen += arglen +1;
-                if (--i > 1)
-                {
-                    s = *++argv;
-                    continue;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            if (i <= 1)
-            {
-                break;
-            }
-            else
-            {
-                char *estrt,*astrt,c;
-                int newlen = emlen;
-                estrt = str; astrt = s;
-                while (newlen < 128)
-                {
-                    if ((c = *str = *s) == 0) break;
-                    if (c == '/' || c == ',')
-                    {
-                        int offset;
-                        offset = (c == ',') ? 1:0;
-                        estrt = str+offset;
-                        astrt = s+offset;
-                    }
-                    str++;   
-                    s++;
-                    newlen++;
-                }
-                *estrt++ = '-';
-                *estrt++ = '\n';
-                *estrt = 0;
-                puts_map(emsg,1);
-                s = astrt;
-                continue;
-            }
+			char *ep, save;
+			char sav1, sav2, sav3;
+			emlen = strlen(cp);
+			if ( emlen > 128 )
+			{
+				save = cp[128];
+				cp[128] = 0;
+				ep = strrchr(cp,' ');
+				if ( !ep )
+					ep = strrchr(cp,',');
+				if ( !ep )
+					ep = strrchr(cp,'-');
+				if ( !ep )
+					ep = strrchr(cp,'/');
+				cp[128] = save;
+				if ( !ep )
+					ep = cp+128;
+				sav1 = ep[1];
+				sav2 = ep[2];
+				sav3 = ep[3];
+				ep[1] = '\\';
+				ep[2] = '\n';
+				ep[3] = 0;
+			}
+			else
+			{
+				ep = cp+emlen;
+				ep[0] = '\n';
+				ep[1] = 0;
+			}
+			puts_map(cp,1);
+			if ( emlen > 128 )
+			{
+				ep[3] = sav3;
+				ep[2] = sav2;
+				ep[1] = sav1;
+			}
+			cp = ep+1;
         }
-        *str++ = '\n';
-        *str++ = 0;
-        puts_map(emsg,1);
-        break;
-    }
+    } while (0);
     return;
 }
 

@@ -30,7 +30,7 @@ struct ss_struct *last_sym_ref=0;
 #if 0
 extern struct expr_token expr_stack[]; /* expression stack */
 extern int expr_stack_ptr;
-extern long token_value;
+extern int32_t token_value;
 extern void outsym_def();
 extern void memcpy(char *, char *, int);
 extern FILE *outxsym_fp;
@@ -44,7 +44,7 @@ struct sym_def
 static char *sym_top=0,*sym_next=0;
 static struct sym_def *sym_pool=0;
 static int sym_pool_size;
-long symdef_pool_used;
+int32_t symdef_pool_used;
 
 /************************************************************************
  * Write expression stack to symbol definition file
@@ -111,12 +111,12 @@ SS_struct *read_from_sym( void )
     if (sdf->size == TOKEN_LINK)
     {
         sdf = (struct sym_def *)sdf->ptr;
-        if (!options->rel)
+        if (!qual_tbl[QUAL_REL].present)
         {
             if (MEM_free(sym_top))
             { /* give back the memory */
-                sprintf(emsg,"Error free'ing %d bytes at %08lX from sym_pool",
-                        MAX_TOKEN*8, (unsigned long)sym_top);
+                sprintf(emsg,"Error free'ing %d bytes at %p from sym_pool",
+                        MAX_TOKEN*8, (void *)sym_top);
                 err_msg(MSG_WARN,emsg);
             }
             sym_top = (char *)sdf;
@@ -163,22 +163,22 @@ int ev_exp( struct exp_stk *eptr )
         {
             tos->expr_code = ctos->expr_code;
             tos->expr_value = ctos->expr_value;
-            tos->expr_ptr = ctos->expr_ptr;
+			tos->ss_ptr = ctos->ss_ptr;
         }
         switch (tos->expr_code)
         {
         case EXPR_IDENT:
 			{         /* 1 level of indirection */
                 tos->expr_code = EXPR_SYM;      /* signal its now a sym */
-                tos->expr_ptr = *((int)tos->expr_ptr+id_table);
+				tos->ss_ptr = id_table[tos->ss_id]; /* * ((int)tos->expr_ptr + id_table); */
             }
             /* fall through to EXPR_SYM */
         case EXPR_SYM:
 			{
-                sym_ptr = tos->expr_ptr;        /* get pointer to symbol */
+                sym_ptr = tos->ss_ptr;        /* get pointer to symbol */
                 if (!sym_ptr->flg_defined)
                 {
-                    if (!options->rel)
+                    if (!qual_tbl[QUAL_REL].present)
                     {
                         sprintf(emsg,
                                 "Reference to undefined symbol {%s}",
@@ -195,15 +195,16 @@ int ev_exp( struct exp_stk *eptr )
                 if (sym_ptr->flg_segment)
                 {
                     last_seg_ref = sym_ptr;
-                    if (options->rel)
+                    if (qual_tbl[QUAL_REL].present)
                     {
                         if (sym_ptr->seg_spec->seg_first != 0)
                         {
-                            tos->expr_ptr = sym_ptr->seg_spec->seg_first;
+                            tos->ss_ptr = sym_ptr->seg_spec->seg_first;
                         }
                     }
                     tos->expr_value += sym_ptr->ss_value;
-                    if (!options->rel || sym_ptr->flg_abs) tos->expr_code = EXPR_VALUE;
+                    if (!qual_tbl[QUAL_REL].present || sym_ptr->flg_abs)
+						tos->expr_code = EXPR_VALUE;
                 }
                 else
                 {                /* -+ segment/symbol */
@@ -212,7 +213,7 @@ int ev_exp( struct exp_stk *eptr )
                     {
                         struct exp_stk *lnk;
                         lnk = sym_ptr->ss_exprs;
-                        if (!options->rel || sym_ptr->flg_local)
+                        if (!qual_tbl[QUAL_REL].present || sym_ptr->flg_local)
                         {
                             if (ev_exp(lnk) == 0)
                             {    /* collapse expression */
@@ -234,7 +235,7 @@ int ev_exp( struct exp_stk *eptr )
                         }
                         else
                         {
-                            if (!options->rel)
+                            if (!qual_tbl[QUAL_REL].present)
                             {
                                 sprintf(emsg,
                                         "Definition of symbol {%s} is unresolved",
@@ -252,12 +253,12 @@ int ev_exp( struct exp_stk *eptr )
                                 {
                                     tos->expr_code = lnk->ptr->expr_code;
                                     tos->expr_value += lnk->ptr->expr_value;
-                                    tos->expr_ptr = lnk->ptr->expr_ptr;
+                                    tos->ss_ptr = lnk->ptr->ss_ptr;
                                 }
                                 else
                                 {
                                     tos->expr_code = EXPR_LINK;
-                                    tos->expr_ptr = (struct ss_struct *)lnk;
+                                    tos->ss_ptr = (SS_struct *)lnk;
                                 }
                             }
                         }
@@ -279,7 +280,7 @@ int ev_exp( struct exp_stk *eptr )
         case EXPR_B:
         case EXPR_L:
 			{
-                sym_ptr = tos->expr_ptr;        /* get pointer to segment */
+                sym_ptr = tos->ss_ptr;        /* get pointer to segment */
                 if (!sym_ptr->flg_segment)
                 {
                     sprintf(emsg,"{%s} from file %s is not a segment",
@@ -292,7 +293,7 @@ int ev_exp( struct exp_stk *eptr )
                 else
                 {
                     last_seg_ref = sym_ptr;
-                    if (!options->rel)
+                    if (!qual_tbl[QUAL_REL].present)
                     {
                         tos->expr_code = EXPR_VALUE;
                         tos->expr_value = (tos->expr_code == EXPR_L) ? 
@@ -327,7 +328,7 @@ int ev_exp( struct exp_stk *eptr )
                     rel_flg = 0;
                     if (fos->expr_code == EXPR_VALUE) rel_flg = 1;
                     if (i != 2 || sos->expr_code == EXPR_VALUE) rel_flg |= 2;
-                    if (!options->rel)
+                    if (!qual_tbl[QUAL_REL].present)
                     {
                         if (rel_flg != 3)
                         {
@@ -438,7 +439,7 @@ int ev_exp( struct exp_stk *eptr )
                             else
                             {
                                 sos->expr_value =
-                                (unsigned long)sos->expr_value >> fos->expr_value;
+                                (uint32_t)sos->expr_value >> fos->expr_value;
                             }
                             break;
                         }
@@ -465,7 +466,7 @@ int ev_exp( struct exp_stk *eptr )
                                 sos->expr_value = 0;
                                 break;
                             }
-                            sos->expr_value = (unsigned long)sos->expr_value / (unsigned long)fos->expr_value;
+                            sos->expr_value = (uint32_t)sos->expr_value / (uint32_t)fos->expr_value;
                             break;
                         }
                     case EXPROPER_DIV: {      /* signed divide */
@@ -631,14 +632,14 @@ int ev_exp( struct exp_stk *eptr )
                             }
                             else
                             {
-                                long t;
+                                int32_t t;
                                 SS_struct *tp;
                                 t = fos->expr_value;
-                                tp = fos->expr_ptr;
+                                tp = fos->ss_ptr;
                                 fos->expr_value = sos->expr_value;
-                                fos->expr_ptr = sos->expr_ptr;
+                                fos->ss_ptr = sos->ss_ptr;
                                 sos->expr_value = t;
-                                sos->expr_ptr = tp;          
+                                sos->ss_ptr = tp;          
                                 i = 1;      /* eat only the operator */
                             }
                             break;
@@ -649,7 +650,7 @@ int ev_exp( struct exp_stk *eptr )
                             pick = sos-eptr->ptr;
                             if (pick < fos->expr_value)
                             {
-                                sprintf(emsg,"Object file error: Tried to PICK %ld'th item on a stack of %d items",
+                                sprintf(emsg,"Object file error: Tried to PICK %d'th item on a stack of %d items",
                                         fos->expr_value,pick);
                                 err_msg(MSG_WARN,emsg);
                                 ++err_cnt;
@@ -670,7 +671,7 @@ int ev_exp( struct exp_stk *eptr )
                                 {
                                     fos->expr_code = pck->expr_code;
                                     fos->expr_value = pck->expr_value;
-                                    fos->expr_ptr = pck->expr_ptr;
+                                    fos->ss_ptr = pck->ss_ptr;
                                 }
                             }
                             i = 1;     /* eat only the operator */
@@ -691,7 +692,7 @@ int ev_exp( struct exp_stk *eptr )
             }          /* -- case on type oper	   */
         }             /* -- switch on expr_type  */
     }                /* -- for all expr items   */
-    if (!options->rel)
+    if (!qual_tbl[QUAL_REL].present)
     {
         if (eptr->len != 1 || eptr->ptr->expr_code != EXPR_VALUE)
         {
@@ -754,12 +755,12 @@ void symbol_definitions( void )
         sym_ptr = read_from_sym();
         if (sym_ptr == (struct ss_struct *)0)
         {
-            if (!options->rel)
+            if (!qual_tbl[QUAL_REL].present)
             {
                 if (MEM_free(sym_top))
                 { /* give back the memory */
-                    sprintf(emsg,"Error free'ing %d bytes at %08lX from sym_pool",
-                            MAX_TOKEN*8, (unsigned long)sym_top);
+                    sprintf(emsg,"Error free'ing %d bytes at %p from sym_pool",
+                            MAX_TOKEN*8, (void *)sym_top);
                     err_msg(MSG_WARN,emsg);
                 }
                 sym_top = 0;
@@ -779,7 +780,7 @@ void symbol_definitions( void )
             }
             else
             {
-                if (!options->rel)
+                if (!qual_tbl[QUAL_REL].present)
                 {
                     sym_ptr->flg_exprs = 0;  /* reset the expression flag */
                     sym_ptr->flg_abs = 1;    /* signal symbol is resolved */
@@ -794,11 +795,11 @@ void symbol_definitions( void )
     }                /* -- while	*/
 }               /* -- sym_def	*/
 
-int dump_expr( struct exp_stk *exp )
+int dump_expr( EXP_stk *exp )
 {
     int len;
-    struct expr_token *ex;
-    struct ss_struct *sym_ptr;
+    EXPR_token *ex;
+    SS_struct *sym_ptr;
     len = exp->len;
     ex = exp->ptr;
     printf("Expression stack with %d terms\n",exp->len);
@@ -807,25 +808,26 @@ int dump_expr( struct exp_stk *exp )
         switch (ex->expr_code)
         {
         case EXPR_IDENT:
-			sym_ptr = *((int)ex->expr_ptr+id_table);
+			sym_ptr = id_table[ex->ss_id]; /* * ((int)ex->expr_ptr + id_table); */
 			if (sym_ptr != 0 && sym_ptr->ss_string != 0)
 			{
-				printf("\tEXPR_IDENT %d. Value %ld. Points to symbol %s\n",
-					   (int)ex->expr_ptr,ex->expr_value,sym_ptr->ss_string);
+				printf("\tEXPR_IDENT %d. Value %d. Points to symbol %s\n",
+					   ex->ss_id,ex->expr_value,sym_ptr->ss_string);
 			}
 			else
 			{
-				printf("\tEXPR_IDENT %d. Value %ld. NO SYMBOL FOR IT\n",
-					   (int)ex->expr_ptr,ex->expr_value);
+				printf("\tEXPR_IDENT %d. Value %d. NO SYMBOL FOR IT\n",
+					   ex->ss_id,ex->expr_value);
 			}
 			continue;
         case EXPR_SYM:
-			sym_ptr = ex->expr_ptr;     /* get pointer to symbol */
+			sym_ptr = ex->ss_ptr; /* ex->expr_ptr; */     /* get pointer to symbol */
 			if (sym_ptr != 0 && sym_ptr->ss_string != 0)
 			{
-				printf("\tEXPR_SYM. Ptr %08X, Value %ld. Points to symbol %s\n",
-					   (int)ex->expr_ptr,ex->expr_value,sym_ptr->ss_string);
-				if (sym_ptr->flg_segment) printf("\t\tIs a segment.\n");
+				printf("\tEXPR_SYM. Ptr %p, Value %d. Points to symbol %s\n",
+					   (void *)sym_ptr, ex->expr_value, sym_ptr->ss_string);
+				if (sym_ptr->flg_segment)
+					printf("\t\tIs a segment.\n");
 				if (sym_ptr->flg_defined)
 				{
 					if (sym_ptr->flg_exprs)
@@ -836,23 +838,23 @@ int dump_expr( struct exp_stk *exp )
 					}
 					else
 					{
-						printf("\t\tSymbol is defined with value of: %ld\n",
+						printf("\t\tSymbol is defined with value of: %d\n",
 							   sym_ptr->ss_value);
 					}
 				}
 			}
 			else
 			{
-				printf("\tEXPR_SYM: expr=%08lX. \"%s\"=%ld. NON-EXISTANT SYMBOL\n",
-					   (unsigned long)ex->expr_ptr, sym_ptr->ss_string, ex->expr_value);
+				printf("\tEXPR_SYM: expr=%p. \"%s\"=%d. NON-EXISTANT SYMBOL\n",
+					   (void *)sym_ptr, sym_ptr ? sym_ptr->ss_string : NULL, ex->expr_value);
 			}
 			continue;
         case EXPR_VALUE:
-			printf("\tEXPR_VALUE. Value %ld\n",ex->expr_value);
+			printf("\tEXPR_VALUE. Value %d\n",ex->expr_value);
 			continue;
         case EXPR_B:
         case EXPR_L:
-			sym_ptr = ex->expr_ptr;     /* get pointer to segment */
+			sym_ptr = ex->ss_ptr;     /* get pointer to segment */
 			if (sym_ptr == 0 || !sym_ptr->flg_segment)
 			{
 				printf("\tEXPR_L or EXPR_B. ptr does not point to segment\n");
@@ -860,7 +862,7 @@ int dump_expr( struct exp_stk *exp )
 			}
 			else
 			{
-				printf("\tEXPR_L or EXPR_B. Value %ld. Points to %s\n",
+				printf("\tEXPR_L or EXPR_B. Value %d. Points to %s\n",
 					   ex->expr_value,sym_ptr->ss_string);
 			}
 			continue;
@@ -878,8 +880,11 @@ int dump_expr( struct exp_stk *exp )
 			}
 			continue;
         default:
-			printf("\tUnknown expression code: %X, value = %ld, ptr = %08lX\n",
-				   ex->expr_code, ex->expr_value, (unsigned long)ex->expr_ptr);
+			printf("\tUnknown expression code: %X, value = %d, id=%d, ptr = %p\n",
+				   ex->expr_code,
+				   ex->expr_value,
+				   ex->ss_id,
+				   (void *)ex->ss_ptr);
 			continue;
         }             /* -- switch on expr_type  */
     }                /* -- for all expr items   */

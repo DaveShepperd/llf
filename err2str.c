@@ -18,11 +18,12 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #if defined(VMS)
 typedef struct desc
 {
-    unsigned short len;
+    uint16_t len;
     unsigned char type;
     unsigned char class;
     char *ptr;
@@ -36,7 +37,7 @@ static Desc gmsgdesc = {sizeof(undef_msg),0,0,undef_msg};
 static char undef_msg[64];
 #endif
 
-char *err2str( int num )        /* modeled after VMS's strerror() */
+const char *err2str( int num )        /* modeled after VMS's strerror() */
 {
 #ifndef __TURBOC__
     switch (num)
@@ -88,12 +89,12 @@ char *err2str( int num )        /* modeled after VMS's strerror() */
 #if 0
             struct
             {
-                unsigned short count;
-                unsigned short options;
-                unsigned long code;
-                unsigned long stv;
+                uint16_t count;
+                uint16_t options;
+                uint32_t code;
+                uint32_t stv;
             } msgvec;
-            msgvec.count = sizeof(msgvec)/sizeof(long)-1;
+            msgvec.count = sizeof(msgvec)/sizeof(int32_t)-1;
             msgvec.options = 0;
             msgvec.code = vaxc$errno;
             msgvec.stv = err2str$stv;

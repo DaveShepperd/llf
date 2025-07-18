@@ -19,6 +19,8 @@
 #ifndef _TOKEN_H_
 #define _TOKEN_H_ 1
 
+#include <inttypes.h>
+
 /* The following are token codes for pass2 decode */
 
 #ifndef TRUE
@@ -27,35 +29,35 @@
 #endif
 
 enum token {
-   MAX_TOKEN 	=2048,		/* maximum length for token strings and input string */
-   MAX_LINE  	=264,		/* maximum length for output line */
-
-   HASH_TABLE_SIZE =3001,	/* hash table size (prime number) */
-
-   XREF_BLOCK_SIZE =4,		/* 3 filenames/xref block + link to next */
-
-   TOKEN_cmd      =0,   /* command char follows (char) */
-   TOKEN_ID       =1,   /* ID string follows (s) */
-   TOKEN_ID_num   =2,   /* ID enumerator follows (int) */
-   TOKEN_const    =3,   /* constant follows (long) */
-   TOKEN_oper     =4,   /* expression operator follows (char) */
-   TOKEN_expr_tag =5,	/* expression tag follows (char) */
-   TOKEN_bins     =6,   /* binary string */
-   TOKEN_ascs     =7,   /* ASCII text string follows (s) */
-   TOKEN_LB       =8,   /* Length/Base operator follows (char) */
-   TOKEN_sep      =9,   /* line seperator */
-   TOKEN_repf    =10,   /* replication factor follows (long) */
-   TOKEN_uc      =11,   /* segment alignment code u or c */
-   TOKEN_LINK   =126,	/* link to next segment */
-   TOKEN_EOF    =127,	/* end of file */
-
-   TMP_NUM    =0x7F,	/* constant value between -64 and + 63 */
+	MAX_TOKEN 	=2048,		/* maximum length for token strings and input string */
+	MAX_LINE  	=264,		/* maximum length for output line */
+	
+	HASH_TABLE_SIZE =3001,	/* hash table size (prime number) */
+	
+	XREF_BLOCK_SIZE =4,		/* 3 filenames/xref block + link to next */
+	
+	TOKEN_cmd      =0,   /* command char follows (char) */
+	TOKEN_ID       =1,   /* ID string follows (s) */
+	TOKEN_ID_num   =2,   /* ID enumerator follows (int) */
+	TOKEN_const    =3,   /* constant follows (long) */
+	TOKEN_oper     =4,   /* expression operator follows (char) */
+	TOKEN_expr_tag =5,	/* expression tag follows (char) */
+	TOKEN_bins     =6,   /* binary string */
+	TOKEN_ascs     =7,   /* ASCII text string follows (s) */
+	TOKEN_LB       =8,   /* Length/Base operator follows (char) */
+	TOKEN_sep      =9,   /* line seperator */
+	TOKEN_repf    =10,   /* replication factor follows (long) */
+	TOKEN_uc      =11,   /* segment alignment code u or c */
+	TOKEN_LINK   =126,	/* link to next segment */
+	TOKEN_EOF    =127,	/* end of file */
+	
+	TMP_NUM    =0x7F,	/* constant value between -64 and + 63 */
 	TMP_NNUM   =0x80,	/* Not a number */
 	TMP_SIZE   =0x03,	/* bit mask for size bits */
 	TMP_ZERO   =0x00,	/* Value is 0 */
 	TMP_B8     =0x01,	/* Value is 8 bits */
 	TMP_B16    =0x02,	/* Value is 16 bits */
-	TMP_B32    =0x03,	/* value is 32 bits */
+	TMP_B32x   =0x03,	/* value is 32 (or 64) bits */
 	TMP_EOF    =0x80,	/* tmp file entry is end of file */
 	TMP_EXPR   =0x84,	/* tmp file entry is a expression */
 	TMP_ASTNG  =0x88,	/* ascii string follows */
@@ -78,34 +80,34 @@ enum token {
  *	with 0xA0 in increments of 4. (0xAx-0xDC reserved for EXPR_xxx)
  */
 
-   EXPR_SYM   =0x20,	/* expression component is a symbol */
-   EXPR_VALUE =0x24,	/* expression component is an absolute value */
-   EXPR_OPER  =0x28,	/* expression component is an operator */
-   EXPR_L     =0x2C,	/* expression component is an L */
-   EXPR_B     =0x30,	/* expression component is a  B */
-   EXPR_TAG   =0x34,	/* expression tag follows */
-   EXPR_IDENT =0x38,	/* symbol identifier follows */
-   EXPR_LINK  =0x3C,	/* link to another expression */
-
-   OUTPUT_HEX =0,	/* output mode tekhex */
-   OUTPUT_OL,		/* output mode relative ascii */
-   OUTPUT_VLDA,		/* output absolute binary */
-   OUTPUT_OBJ,		/* output relative binary */
-
-   OUT_FN_ABS =0,	/* indicies into the output fn_struct table */
-   OUT_FN_MAP,
-   OUT_FN_STB,
-   OUT_FN_SYM,
-   OUT_FN_SEC,
-   OUT_FN_TMP,
-   OUT_FN_MAX,		/* maximum # of output files */
-
-   MSG_WARN	=0,	/* error message severities */
-   MSG_SUCCESS,
-   MSG_ERROR,
-   MSG_INFO,
-   MSG_FATAL,
-   MSG_CONT		/* continue message */
+	EXPR_SYM   =0x20,	/* expression component is a symbol */
+	EXPR_VALUE =0x24,	/* expression component is an absolute value */
+	EXPR_OPER  =0x28,	/* expression component is an operator */
+	EXPR_L     =0x2C,	/* expression component is an L */
+	EXPR_B     =0x30,	/* expression component is a  B */
+	EXPR_TAG   =0x34,	/* expression tag follows */
+	EXPR_IDENT =0x38,	/* symbol identifier follows */
+	EXPR_LINK  =0x3C,	/* link to another expression */
+	
+	OUTPUT_HEX =0,	/* output mode tekhex */
+	OUTPUT_OL,		/* output mode relative ascii */
+	OUTPUT_VLDA,		/* output absolute binary */
+	OUTPUT_OBJ,		/* output relative binary */
+	
+	OUT_FN_ABS =0,	/* indicies into the output fn_struct table */
+	OUT_FN_MAP,
+	OUT_FN_STB,
+	OUT_FN_SYM,
+	OUT_FN_SEC,
+	OUT_FN_TMP,
+	OUT_FN_MAX,		/* maximum # of output files */
+	
+	MSG_WARN	=0,	/* error message severities */
+	MSG_SUCCESS,
+	MSG_ERROR,
+	MSG_INFO,
+	MSG_FATAL,
+	MSG_CONT		/* continue message */
 };
 
 extern void exit(int);

@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include "token.h"
 #include "add_defs.h"
 #include "memmgt.h"

@@ -25,8 +25,8 @@
 struct ss_struct  *group_list_default=0; /* pointer to default group name */
 struct grp_struct *group_list_top=0;    /* pointer to top of group list */
 struct grp_struct *group_list_next=0;   /* pointer to next free space */
-long group_list_free;           /* number of free spaces left */
-long grp_pool_used;
+int32_t group_list_free;           /* number of free spaces left */
+int32_t grp_pool_used;
 
 /********************************************************************
  * Group lists. There are 2 seperate lists involved in group lists:
@@ -107,16 +107,16 @@ void insert_intogroup(
  *	grp_nam - pointer to ss_struct containing group name
  */
 {
-    struct ss_struct **sp;
+    SS_struct **sp;
     if (grp_ptr->grp_free <= 2)
     {
         int t = 32*sizeof(struct ss_struct **);
-        sp = (struct ss_struct **)MEM_alloc(t);
+        sp = (SS_struct **)MEM_alloc(t);
         grp_pool_used += t;
         if (grp_ptr->grp_free)
         {
-            *(long *)grp_ptr->grp_next++ = -1;
-            *(struct ss_struct ***)grp_ptr->grp_next = sp;
+            *grp_ptr->grp_next++ = (SS_struct *)-1l;
+            *grp_ptr->grp_next = (SS_struct *)sp;
         }
         else
         {
@@ -137,8 +137,8 @@ void insert_intogroup(
  */
 GRP_struct *get_grp_ptr(
                        SS_struct *grp_nam,
-                       long align,
-                       long maxlen
+                       int32_t align,
+                       int32_t maxlen
                        )
 /*
  * At entry:
@@ -156,7 +156,7 @@ GRP_struct *get_grp_ptr(
         grp_nam->flg_group = grp_nam->flg_defined = 1;
         seg_ptr = get_seg_spec_mem(grp_nam);  /* get the special section */
         grp_nam->flg_segment = 0; /* reset the segment flag */
-        seg_ptr->seg_salign = (unsigned short)align; /* pass the segment alignment factor */
+        seg_ptr->seg_salign = (uint16_t)align; /* pass the segment alignment factor */
         seg_ptr->seg_maxlen = maxlen; /* pass the maximum length */
         if (group_list_free <= 1)
         {
@@ -179,7 +179,7 @@ GRP_struct *get_grp_ptr(
         {
             if (grp_ptr != group_list_top)
             {
-                sprintf(emsg,"Group {%s} maxlen is %lu in file: %s\n\t%s%lu%s%s",
+                sprintf(emsg,"Group {%s} maxlen is %u in file: %s\n\t%s%u%s%s",
                         grp_nam->ss_string,seg_ptr->seg_maxlen,
                         grp_nam->ss_fnd->fn_buff,
                         "and is ",maxlen,
@@ -191,11 +191,11 @@ GRP_struct *get_grp_ptr(
                 seg_ptr->seg_maxlen = maxlen;
             }
         }
-        if (seg_ptr->seg_salign != (unsigned short)align)
+        if (seg_ptr->seg_salign != (uint16_t)align)
         {
             if (grp_ptr != group_list_top)
             {
-                sprintf(emsg,"Group {%s}'s align is %u in file: %s\n\t%s%lu%s%s",
+                sprintf(emsg,"Group {%s}'s align is %u in file: %s\n\t%s%u%s%s",
                         grp_nam->ss_string,seg_ptr->seg_salign,
                         grp_nam->ss_fnd->fn_buff,
                         "and is ",align,
@@ -204,7 +204,7 @@ GRP_struct *get_grp_ptr(
             }
             else
             {
-                seg_ptr->seg_salign = (unsigned short)align;
+                seg_ptr->seg_salign = (uint16_t)align;
             }
         }
     }
@@ -221,7 +221,7 @@ SS_struct **find_seg_in_group(
 {
     while (*grp_list)
     {          /* 0 means end of list */
-        if (*(long *)grp_list == -1)   /* -1 means next entry is new pointer */
+        if (*grp_list == (SS_struct *)-1l)   /* -1 means next entry is new pointer */
         {
             ++grp_list;
             grp_list = *(SS_struct ***)grp_list; /* link to next list */
@@ -282,7 +282,7 @@ int add_to_group(
     sym_list = find_seg_in_group(sym_ptr, group_list_top->grp_top);
     if (sym_list)
     {
-        *(long *)sym_list = -2;       /* -2 means skip it */
+        *sym_list = (SS_struct *)-2l;       /* -2 means skip it */
     }
     return TRUE;             /* done */
 }      

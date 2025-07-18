@@ -1,0 +1,94 @@
+; A semi-colon in column 1 signals a comment line for this file and ignored.
+; Except for the comment char, anything other than a 'A' 'N', 'O', 'S' or 'L'
+; in column 1 will be copied without modification to the output file: (expected
+; to be qualtbl.h)
+;
+/*
+    qualtbl.h - Part of llf, a cross linker. Part of the macxx tool chain.
+    Copyright (C) 2025 David Shepperd
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**************************************************************************
+ * @note This file is produced by a separate program called mk_qualtbl. *
+ * Any manual edits made to this file will likely be lost during the next *
+ * build. Edit mk_qualtbl.c and/or qualtbl.dat to make any necessary  *
+ * changes to these lists.                                                *
+ **************************************************************************/
+;
+;
+; The text following a 'S,' in columns 1 and 2 are copied as is to the output enclosed
+; in the #if QUALTBL_GET_OTHERS.
+;
+
+S,typedef struct qual
+S,{
+S,    unsigned int noval:1;	/* value is not allowed */
+S,    unsigned int optional:1;	/* value is optional */
+S,    unsigned int number:1;	/* value must be a number */
+S,    unsigned int negate:1;	/* value is negatable */
+S,    unsigned int output:1;	/* parameter is an output file */
+S,    unsigned int error:1;	/* field is in error */
+S,    unsigned int negated:1;	/* option is negated */
+S,    unsigned int present:1;	/* up to next byte boundary */
+S,    unsigned char outIdx;	/* output file index */
+S,    const char *string;		/* pointer to qualifier ascii string */
+S,    int id;					/* enum value */
+S,    int32_t valueInt;		/* parameter value if number */
+S,    char *valuePtr;			/* parameter value if string */
+S,} QualTable_t;
+S,
+S,extern QualTable_t qual_tbl[QUAL_MAX];
+
+; The following items are separated from one another using commas with
+; any amount of whitespace between them. Whitespace in the comment string
+; is copied to output as is.
+;
+; Lines starting with 'A' set the initial conditions to qual_tbl[].
+; A line starting with 'L' indicates the last line in the enum and is not
+; included in the struct init.
+
+; Legend:
+; OP - one of A, N, O or L
+; Val - 1 if no value is allowed
+; Opt - 1 if value is optional
+; Num - 1 if value provided, it must be a number
+; Str - 1 if value provided, it is a string
+; Neg - 1 if param is negatible
+; Enum - name of enum
+; Name - name of parameter
+; OutIdx - if param is output file, the index of same
+; Comment - comment to include 
+;
+;OP  Val Opt Num Neg Enum              Name,              OutIdx,        Comment
+A,    0,  0,  0,  0,  QUAL_OPT,        "OPTIONS",           0,           /* Option input file */
+A,    0,  0,  0,  0,  QUAL_LIB,        "LIBRARY",           0,			  /* Library input file */
+A,    1,  0,  0,  0,  QUAL_CROSS,      "CROSS_REFERENCE",	 0,			  /* Cross reference request */
+A,    1,  0,  0,  0,  QUAL_REL,        "RELATIVE",          0,			  /* Relative output */
+A,    1,  0,  0,  1,  QUAL_ERR,        "ERROR",             0,           /* Force display of undefined symbols */
+A,    1,  0,  0,  1,  QUAL_VLDA,       "VLDA",				 0,			  /* Create .vlda output (same as -binary) */
+A,    1,  0,  0,  1,  QUAL_OBJ,        "OBJECT",            0,           /* Default input is .ob vs. normal .ol */
+A,    1,  0,  0,  1,  QUAL_OCTAL,      "OCTAL",             0,           /* Print octal numbers in map file */
+A,    0,  1,  1,  1,  QUAL_DEB,        "DEBUG",             0,			  /* Debug flags */
+A,    0,  1,  0,  1,  QUAL_FN_TMP,     "TEMPFILE",          OUT_FN_TMP,  /* Specify temp filename */
+A,    0,  1,  0,  1,  QUAL_FN_ABS,     "OUTPUT",            OUT_FN_ABS,  /* Specify the output filename */
+A,    0,  1,  0,  1,  QUAL_FN_SYM,     "SYMBOL",            OUT_FN_SYM,  /* Specify the symbol filename */
+A,    0,  1,  0,  1,  QUAL_FN_MAP,     "MAP",               OUT_FN_MAP,  /* Specify the map filename */
+A,    0,  1,  0,  1,  QUAL_FN_SEC,     "SECTION",           OUT_FN_SEC,  /* Specify the section filename */
+A,    0,  1,  0,  1,  QUAL_FN_STB,     "STB",               OUT_FN_STB,  /* Specify the stb filename */
+A,    1,  0,  0,  1,  QUAL_BINARY,     "BINARY",            0,           /* Create .vlda output (same as -vlda) */
+A,    1,  0,  0,  1,  QUAL_MISER,      "MISER",             0,           /* Operate in miser mode */
+A,    1,  0,  0,  1,  QUAL_QUIET,      "QUIET",             0,           /* Don't complain about multiple defines via .stb input */
+L,    0,  0,  0,  0,  QUAL_MAX,         NULL,               0,           /* This must be last */

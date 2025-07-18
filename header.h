@@ -19,6 +19,13 @@
 #ifndef _HEADER_H_
 #define _HEADER_H_
 
+#include <inttypes.h>
+#include "formats.h"
+
+#ifndef n_elts
+#define n_elts(x) (sizeof(x)/sizeof((x)[0]))
+#endif
+
 #ifdef LINTING
 #ifdef stdin
 #undef stdin
@@ -27,29 +34,28 @@
 extern FILE *stdin,*stdout,*stderr;
 #endif
 #endif
-extern short pass;		/* pass number indicator */
-extern short output_mode;		/* output mode */
+extern int16_t pass;		/* pass number indicator */
+extern int16_t output_mode;		/* output mode */
 extern char *map_subtitle;	/* pointer to map subtitle */
 extern char *inp_str;		/* temp string area */
 
 #include "memmgt.h"
 
-extern long id_table_size;	/* size of ID number table */
-extern long id_table_base;	/* offset for ID number table */
-extern long grp_pool_used;	/* amount of memory used for grps */
-extern short new_ident;		/* new identifier assignment */
+extern int32_t id_table_size;	/* size of ID number table */
+extern int32_t id_table_base;	/* offset for ID number table */
+extern int32_t grp_pool_used;	/* amount of memory used for grps */
+extern int16_t new_ident;		/* new identifier assignment */
 
-extern long group_list_free;		   /* number of free spaces left */
+extern int32_t group_list_free;		   /* number of free spaces left */
 extern void err_msg();		/* error message routine */
 extern char emsg[];		/* error message buffer */
 extern int error_count[5];
-extern int gc_argc;		/* arg count */
-extern char **gc_argv;	/* arg value */
+extern char *commandLine;
 
 extern char *def_lib_ptr[];
 extern char *def_obj_ptr[];
 extern int info_enable;
-extern long token_value;    /* value of current token */
+extern int32_t token_value;    /* value of current token */
 extern int token_type;      /* token type */
 extern char *token_pool;    /* pointer to token pool */
 extern int token_pool_size;     /* size of remaining token pool */
@@ -58,10 +64,10 @@ extern char *tkn_ptr;       /* pointer to char in inp_str */
 extern char *inp_str;       /* external array of input chars */
 extern char err_str[];      /* external error string array */
 extern int err_str_size;
-extern void add_to_reserve(unsigned long start, unsigned long len);
-extern int check_reserve(unsigned long start, unsigned long len);
-extern int get_free_space(unsigned long len, unsigned long *start, int align);
-extern int hashit( char *strng, int hash_size );
+extern void add_to_reserve(uint32_t start, uint32_t len);
+extern int check_reserve(uint32_t start, uint32_t len);
+extern int get_free_space(uint32_t len, uint32_t *start, int align);
+extern unsigned int hashit( char *strng, int hash_size );
 extern void sym_stats( void );
 
 extern FILE *outxsym_fp;	/* global pointer for outx routines */
@@ -69,7 +75,7 @@ extern FILE *outxabs_fp;
 extern int outx_width,outx_swidth;  /* outx default record length */
 
 extern char ascii_date[];	/* need pointer to current date string */
-extern long tot_ids,max_idu;
+extern int32_t tot_ids,max_idu;
 extern char *target;        /* pointer to "target" string */
 
 extern char def_map[],
@@ -86,19 +92,19 @@ def_obj[],
 def_lib[],
 def_tmp[];
 
-extern long fn_pool_used;
-extern long xref_pool_used;
-extern long grp_pool_used;
-extern long rm_pool_used;
-extern long misc_pool_used;
-extern long tmp_pool_used;
-extern long sym_pool_used;
-extern long symdef_pool_used;
-extern long total_mem_used;
-extern long peak_mem_used;
+extern int32_t fn_pool_used;
+extern int32_t xref_pool_used;
+extern int32_t grp_pool_used;
+extern int32_t rm_pool_used;
+extern int32_t misc_pool_used;
+extern int32_t tmp_pool_used;
+extern int32_t sym_pool_used;
+extern int32_t symdef_pool_used;
+extern int32_t total_mem_used;
+extern int32_t peak_mem_used;
 extern int map_line;        /* lines remaining on map page */
-extern long record_count;    /* total records input */
-extern long object_count;    /* total records input */
+extern int32_t record_count;    /* total records input */
+extern int32_t object_count;    /* total records input */
 
 
 #endif /* _HEADER_H_ */

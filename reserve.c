@@ -23,7 +23,7 @@
 #include "header.h"
 
 RM_control *rm_control;     /* all reserved memory info is recorded here */
-long rm_pool_used;
+int32_t rm_pool_used;
 
 /**********************************************************************
  * Get a reserved_memory block of memory
@@ -130,7 +130,7 @@ static void fold_reservmem(RM_struct *rm)
  *	returns nothing
  */
 {
-    unsigned long start,end;
+    uint32_t start,end;
     struct rm_struct *nrm;
     if ((nrm=rm->rm_next) == 0) return;
     start = rm->rm_start;
@@ -149,8 +149,8 @@ static void fold_reservmem(RM_struct *rm)
  * Add an item to the reserved memory list
  */
 void add_to_reserve(start,len)
-unsigned long start;
-unsigned long len;
+uint32_t start;
+uint32_t len;
 /*
  * Adds the start/len pair to the reserved memory list
  * At entry:
@@ -161,7 +161,7 @@ unsigned long len;
  *	areas into one.
  */
 {
-    unsigned long et,end;
+    uint32_t et,end;
     int condit;
     struct rm_struct **prev=0, *rm, *nrm;;
     if (!len) return;        /* don't do anything if adding a 0 len seg */
@@ -247,7 +247,7 @@ unsigned long len;
 /**********************************************************************
  * Check some address to against the reserved memory list
  */
-int check_reserve(unsigned long start, unsigned long len)
+int check_reserve(uint32_t start, uint32_t len)
 /*
  * check the start/len pair against the reserved memory list
  * At entry:
@@ -257,7 +257,7 @@ int check_reserve(unsigned long start, unsigned long len)
  *	returns TRUE if specified area is in the reserved memory list
  */
 {
-    unsigned long et,end;
+    uint32_t et,end;
     struct rm_struct *rm;
     if (!len) return FALSE;  /* 0 len segment is not in list */
     if (rm_control == 0 || (rm=rm_control->top) == 0)
@@ -291,7 +291,7 @@ int check_reserve(unsigned long start, unsigned long len)
 /**********************************************************************
  * Get next free n bytes and declare the area as reserved
  */
-int get_free_space(unsigned long len, unsigned long *start, int align)
+int get_free_space(uint32_t len, uint32_t *start, int align)
 /*
  * Finds the first available n bytes as indicated by the reserved mem list
  * At entry:
@@ -303,7 +303,7 @@ int get_free_space(unsigned long len, unsigned long *start, int align)
  *	else returns FALSE
  */
 {
-    unsigned long sta= *start;
+    uint32_t sta= *start;
     struct rm_struct *rm;
     if (rm_control != 0 && (rm = rm_control->top) != 0)
     {

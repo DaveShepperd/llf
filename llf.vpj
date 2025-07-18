@@ -25,7 +25,7 @@
 				RunFromDir="%rw">
 				<Exec
 					CmdLine='gcc -c %xup -ansi %defd -g -Wall -pedantic -Werror %~other -o "%bd%n%oe" %i %f'
-					OtherOptions="-m32 -Wno-char-subscripts"/>
+					OtherOptions="-Wno-char-subscripts"/>
 			</Target>
 			<Target
 				Name="Link"
@@ -281,7 +281,6 @@
 			<F N="add_defs.c"/>
 			<F N="err2str.c"/>
 			<F N="gc.c"/>
-			<F N="gctable.c"/>
 			<F N="grpmgr.c"/>
 			<F N="hashit.c"/>
 			<F N="help.c"/>
@@ -291,6 +290,7 @@
 			<F N="llf.html"/>
 			<F N="mapsym.c"/>
 			<F N="memmgt.c"/>
+			<F N="mk_qualtbl.c"/>
 			<F N="object.c"/>
 			<F N="outx.c"/>
 			<F N="pass1.c"/>
@@ -308,12 +308,13 @@
 			GUID="{1140855C-3E81-4108-9590-05C144AF3E5B}">
 			<F N="add_defs.h"/>
 			<F N="exproper.h"/>
-			<F N="gcstruct.h"/>
+			<F N="formats.h"/>
 			<F N="header.h"/>
 			<F N="memmgt.h"/>
 			<F N="pragma.h"/>
 			<F N="pragma1.h"/>
 			<F N="qksort.h"/>
+			<F N="qualtbl.h"/>
 			<F N="segdef.h"/>
 			<F N="structs.h"/>
 			<F N="token.h"/>
@@ -341,14 +342,21 @@
 				N="Makefile.linux"
 				Type="Makefile"/>
 			<F
+				N="Makefile.linux-32"
+				Type="Makefile"/>
+			<F
 				N="Makefile.mingw32"
 				Type="Makefile"/>
 			<F
 				N="Makefile.msys2"
 				Type="Makefile"/>
 			<F
-				N="Makefile.pi32"
+				N="Makefile.msys2-32"
 				Type="Makefile"/>
+			<F
+				N="Makefile.pi"
+				Type="Makefile"/>
+			<F N="qualtbl.dat"/>
 			<F N="README.md"/>
 		</Folder>
 	</Files>

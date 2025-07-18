@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include "vlda_structs.h"
 #include "version.h"
+#include "formats.h"
 
 #if defined(__CYGWIN__) || defined(WIN32)
 extern int fileno(FILE *fp);
@@ -91,7 +92,8 @@ static Filter_t *getFilterBlk(void)
         filterPool = (Filter_t *)calloc(NUM_FILTERS,sizeof(Filter_t));
         if ( !filterPool )
         {
-            fprintf(stderr, "Failed to allocate %d bytes for filter pool\n", NUM_FILTERS*sizeof(Filter_t));
+            fprintf(stderr, "Failed to allocate " FMT_SZ " bytes for filter pool\n",
+					NUM_FILTERS*sizeof(Filter_t));
             exit(1);
         }
     }

@@ -95,9 +95,9 @@ static  char    *oline;
 /* pointers into lines and checksums for lines */
 static       char   *sp=0,*op=0,*maxop=0;
 static  unsigned int    symcs,objcs;
-static  unsigned long   addr;
-static  unsigned char   varcs;
-static  unsigned char   namcs;
+static  uint32_t   addr;
+static  uint8_t   varcs;
+static  uint8_t   namcs;
 
 static char hexdig[] = "0123456789ABCDEF";
 
@@ -173,14 +173,14 @@ char *get_symid(SS_struct *sym_ptr, char *s)
     return(s);
 }
 
-static short rsize,even_odd=0;
+static int16_t rsize,even_odd=0;
 
 static char *outexp_vlda( EXP_stk *eptr, char *s, int *lp )
 {
     SS_struct *sym_ptr;
     EXPR_token *exp;
     VLDA_vexp ve;
-    unsigned long cmp;
+    uint32_t cmp;
     int len;
 
     exp = eptr->ptr;
@@ -198,8 +198,8 @@ static char *outexp_vlda( EXP_stk *eptr, char *s, int *lp )
             *ve.vexp_type++ = VLDA_EXPR_B; /* insert type code */
             vlda_commexp1:
         case EXPR_SYM: {   /* symbol or segment */
-                long val;
-                sym_ptr = exp->expr_ptr;
+                int32_t val;
+                sym_ptr = exp->ss_ptr;
                 if (sym_ptr->flg_segment && sym_ptr->flg_based)
                 {
                     val = exp->expr_value - sym_ptr->seg_spec->seg_base;
@@ -290,7 +290,7 @@ static char *outexp_vlda( EXP_stk *eptr, char *s, int *lp )
             }
         case EXPR_LINK: {  /* link to another expression */
                 *lp -= 1;       /* the link doesn't count in the total */
-                ve.vexp_chp = outexp_vlda((EXP_stk *)exp->expr_ptr,
+                ve.vexp_chp = outexp_vlda((EXP_stk *)exp->ss_ptr,
                                           ve.vexp_chp,lp);
                 continue;
             }
@@ -331,9 +331,9 @@ static char *outexp_ol( EXP_stk *eptr, char *s )
 			}		   /* fall through to EXPR_SYM */
 		case EXPR_SYM:	   /* symbol or segment */
 			{
-				long val;
-				ol_commexp1:
-				sym_ptr = exp->expr_ptr;
+				int32_t val;
+ol_commexp1:
+				sym_ptr = exp->ss_ptr;
 				s = get_symid(sym_ptr,s);
 				if ( sym_ptr->flg_segment && sym_ptr->flg_based )
 				{
@@ -345,7 +345,7 @@ static char *outexp_ol( EXP_stk *eptr, char *s )
 				}
 				if ( val != 0 )
 				{
-					sprintf(s," %ld +",val);
+					sprintf(s," %d +",val);
 					while ( *s++ );
 					--s;
 				}
@@ -353,7 +353,7 @@ static char *outexp_ol( EXP_stk *eptr, char *s )
 			}
 		case EXPR_VALUE:
 			{
-				sprintf(s," %ld",exp->expr_value);
+				sprintf(s," %d",exp->expr_value);
 				while ( *s++ );
 				--s;
 				break;
@@ -371,7 +371,7 @@ static char *outexp_ol( EXP_stk *eptr, char *s )
 			}
 		case EXPR_LINK:
 			{
-				s = outexp_ol((EXP_stk *)exp->expr_ptr,s);
+				s = outexp_ol((EXP_stk *)exp->ss_ptr,s);
 				break;
 			}
 		default:
@@ -385,13 +385,13 @@ static char *outexp_ol( EXP_stk *eptr, char *s )
 	return s;
 }
 
-char *outexp(EXP_stk *eptr, char *s, int tag, long tlen, char *wrt, FILE *fp)
+char *outexp(EXP_stk *eptr, char *s, int tag, int32_t tlen, char *wrt, FILE *fp)
 {
     VLDA_vexp ve,len_ptr;
     int len;
-    unsigned long cmp;
+    uint32_t cmp;
 
-    if (options->vldadef)
+    if (qual_tbl[QUAL_VLDA].present)
     {
         len = 0;
         len_ptr.vexp_chp = ve.vexp_chp = s;   /* point to output array */
@@ -429,7 +429,7 @@ char *outexp(EXP_stk *eptr, char *s, int tag, long tlen, char *wrt, FILE *fp)
         if (wrt==0) return(ve.vexp_chp); /* exit */
 #ifndef VMS
         rsize = ve.vexp_chp-wrt;
-        fwrite((char *)&rsize,sizeof(short),1,fp);
+        fwrite((char *)&rsize,sizeof(int16_t),1,fp);
         even_odd = rsize&1;
 #endif
         fwrite(wrt,(int)(ve.vexp_chp-wrt)+even_odd,1,fp); /* write it */
@@ -447,7 +447,7 @@ char *outexp(EXP_stk *eptr, char *s, int tag, long tlen, char *wrt, FILE *fp)
             }
             else
             {
-                sprintf(s,":%c %ld",tag,tlen); /* follow with tag and length */
+                sprintf(s,":%c %d",tag,tlen); /* follow with tag and length */
                 while (*s++);
                 --s;            /* backup to NULL */
             }
@@ -488,12 +488,12 @@ char *outxfer( EXP_stk *exp, FILE *fp )
 *	and both the even and odd ROMs. This routine converts each byte to two
 *	hex digits, in contrast to outhstr() which assumes you already have.
 */
-void outbstr( unsigned char *from, int len )
+void outbstr( uint8_t *from, int len )
 {
     register char *rop;
-    unsigned char c;
+    uint8_t c;
     int  k,limit,toeol;
-    if (!options->vldadef)
+    if (!qual_tbl[QUAL_VLDA].present)
     {
         len += len;       /* double the input length if ASCII output */
     }
@@ -547,12 +547,12 @@ void outbstr( unsigned char *from, int len )
         if ((limit &= ~1) == 0) limit = 1;
         if (outx_debug > 2)
         {
-            fprintf(stderr,"Loading %d bytes at addr %08lx in rcd %08lX\n",
+            fprintf(stderr,"Loading %d bytes at addr %08x in rcd %08X\n",
                     limit,addr,vlda_oline->vlda_addr);
         }
         rop = op;
         len -= limit;
-        if (!options->vldadef)
+        if (!qual_tbl[QUAL_VLDA].present)
         {
             addr += limit/2;       /* update address */
             for (  ; limit > 0 ; limit -= 2)
@@ -585,9 +585,9 @@ void outbstr( unsigned char *from, int len )
 *	buffer.
 */
 
-void outorg( unsigned long address, EXP_stk *exp_ptr )
+void outorg( uint32_t address, EXP_stk *exp_ptr )
 {
-    unsigned long taddr,laddr;       /* address of end of txt + 1 */
+    uint32_t taddr,laddr;       /* address of end of txt + 1 */
     switch (output_mode)
     {       /* how to encode it */
     case OUTPUT_HEX: {        /* absolute tekhex mode */
@@ -649,7 +649,7 @@ void outorg( unsigned long address, EXP_stk *exp_ptr )
             break;
         }
     }
-    if (outx_debug > 2) fprintf(stderr,"Changing ORG from %08lX to %08lX\n",addr,address);
+    if (outx_debug > 2) fprintf(stderr,"Changing ORG from %08X to %08X\n",addr,address);
     addr = address;          /* set the new address */
     return;
 }
@@ -676,12 +676,12 @@ int outbyt( unsigned int num, char    *where )
 *	the current line. The variable varcs will contain the contribution
 *	of this string to the checksum.
 */
-int formvar( unsigned long num, char *where )
+int formvar( uint32_t num, char *where )
 {
     int count;
     register char *vp;
     register char c;
-    unsigned long msk;
+    uint32_t msk;
     vp = where;
 
 /*	First, predict where the string will end    */
@@ -704,7 +704,7 @@ int formvar( unsigned long num, char *where )
     *--vp = hexdig[(int)c];
     if ( vp != where )
     {
-        fprintf(stderr,"OUTX:formvar- bad estimate, %X != %X\n", (unsigned int)vp, (unsigned int)where);
+        fprintf(stderr,"OUTX:formvar- bad estimate, %p != %p\n", (void *)vp, (void *)where);
     }
     return(count+1);
 }
@@ -715,7 +715,7 @@ int formvar( unsigned long num, char *where )
 *	formvar(). This preliminary is required to check if the symbol will
 *	fit on the current line.
 */
-int formsym( char *name, int type, unsigned long address, char *where )
+int formsym( char *name, int type, uint32_t address, char *where )
 {
     int i;
     char *np,c;
@@ -789,7 +789,7 @@ void outsym( SS_struct *sym_ptr, int mode )
             }
         }
     }
-    len = formsym(sym_ptr->ss_string,1,(unsigned long)sym_ptr->ss_value,sp);
+    len = formsym(sym_ptr->ss_string,1,(uint32_t)sym_ptr->ss_value,sp);
     if (ts != (char *)0) *ts = ' ';
     if ( sp - sline + len >= outx_swidth)
     {
@@ -808,7 +808,7 @@ void outsym( SS_struct *sym_ptr, int mode )
             *ssp = '\n';
 #ifndef VMS
             rsize = ssp-sline+1;
-            fwrite((char *)&rsize,sizeof(short),1,outxsym_fp);
+            fwrite((char *)&rsize,sizeof(int16_t),1,outxsym_fp);
             even_odd = rsize&1;
 #endif
             fwrite(sline,(int)(ssp-sline+1)+even_odd,1,outxsym_fp); /* write a transparent rcd */
@@ -868,7 +868,7 @@ void outsym_def(SS_struct *sym_ptr, int mode )
                 }
                 else
                 {
-                    sprintf(s," %ld\n",sym_ptr->ss_value);
+                    sprintf(s," %d\n",sym_ptr->ss_value);
                 }
             }
             fputs(sline,outxsym_fp);
@@ -900,7 +900,7 @@ void outsym_def(SS_struct *sym_ptr, int mode )
             }
 #ifndef VMS
             rsize = s-sline;
-            fwrite((char *)&rsize,sizeof(short),1,outxsym_fp);
+            fwrite((char *)&rsize,sizeof(int16_t),1,outxsym_fp);
             even_odd = rsize&1;
 #endif
             fwrite(sline,(int)(s-sline)+even_odd,1,outxsym_fp); /* write it */
@@ -910,7 +910,7 @@ void outsym_def(SS_struct *sym_ptr, int mode )
     return;          /* done */
 }
 
-void outseg_def(SS_struct *sym_ptr, unsigned long len, int based )
+void outseg_def(SS_struct *sym_ptr, uint32_t len, int based )
 {
     SEG_spec_struct *seg_ptr;
     register char *s,*name=sym_ptr->ss_string;
@@ -955,11 +955,11 @@ void outseg_def(SS_struct *sym_ptr, unsigned long len, int based )
             *s++ = '\n';
             *s++ = 0;
             fputs(sline,outxsym_fp);
-            fprintf(outxsym_fp,".len %%%d %ld\n",
+            fprintf(outxsym_fp,".len %%%d %d\n",
                     sym_ptr->ss_ident,len);
             if (based)
             {
-                fprintf(outxsym_fp,".abs %%%d %ld\n",
+                fprintf(outxsym_fp,".abs %%%d %d\n",
                         sym_ptr->ss_ident,seg_ptr->seg_base);
             }              /* --based */
             return;            /* done */
@@ -999,7 +999,7 @@ void outseg_def(SS_struct *sym_ptr, unsigned long len, int based )
             }
 #ifndef VMS
             rsize = s-sline;
-            fwrite((char *)&rsize,sizeof(short),1,outxsym_fp);
+            fwrite((char *)&rsize,sizeof(int16_t),1,outxsym_fp);
             even_odd = rsize&1;
 #endif
             fwrite(sline,(int)(s-sline)+even_odd,1,outxsym_fp); /* write it */
@@ -1008,7 +1008,7 @@ void outseg_def(SS_struct *sym_ptr, unsigned long len, int based )
             ((VLDA_slen *)vlda_seg)->vslen_len = len; /* copy the length */
 #ifndef VMS
             rsize = sizeof(VLDA_slen);
-            fwrite((char *)&rsize,sizeof(short),1,outxsym_fp);
+            fwrite((char *)&rsize,sizeof(int16_t),1,outxsym_fp);
             even_odd = rsize&1;
 #endif
             fwrite(sline,sizeof(VLDA_slen)+even_odd,1,outxsym_fp); /* write it */
@@ -1040,7 +1040,7 @@ void flushobj( void )
         case OUTPUT_OBJ: {
 #ifndef VMS
                 rsize = maxop-oline;
-                fwrite((char *)&rsize,sizeof(short),1,outxabs_fp);
+                fwrite((char *)&rsize,sizeof(int16_t),1,outxabs_fp);
                 even_odd = rsize&1;
 #endif
                 fwrite(oline,(int)(maxop-oline)+even_odd,1,outxabs_fp);
@@ -1070,7 +1070,7 @@ void flushsym( int mode)
         case OUTPUT_VLDA: {
 #ifndef VMS
                 rsize = sp-sline;
-                fwrite((char *)&rsize,sizeof(short),1,outxsym_fp);
+                fwrite((char *)&rsize,sizeof(int16_t),1,outxsym_fp);
                 even_odd = rsize&1;
 #endif
                 fwrite(sline,(int)(sp-sline)+even_odd,1,outxsym_fp); /* write it */
@@ -1091,14 +1091,14 @@ void flushsym( int mode)
 *	output.
 */
 
-void termobj( long traddr )
+void termobj( int32_t traddr )
 {
     if ( op ) flushobj();
     if (output_mode == OUTPUT_HEX)
     {
         strcpy(oline,"%ll8kk");
         op = oline+6;
-        op += formvar((unsigned long)traddr,op);
+        op += formvar((uint32_t)traddr,op);
         objcs = varcs + 8;
         if ( ( oline+outx_width - op ) < 2 )
         {
@@ -1116,13 +1116,13 @@ void termobj( long traddr )
         vlda_oline->vlda_addr = traddr;
 #ifndef VMS
         rsize = sizeof(VLDA_abs);
-        fwrite((char *)&rsize,sizeof(short),1,outxabs_fp);
+        fwrite((char *)&rsize,sizeof(int16_t),1,outxabs_fp);
         even_odd = rsize&1;
 #endif
         fwrite(oline,sizeof(VLDA_abs)+even_odd,1,outxabs_fp);
 #if 0
     }
-    else if (options->rel)
+    else if (qual_tbl[QUAL_REL].present)
     {
         fputs(".eof\n", outxabs_fp);
 #endif
@@ -1131,14 +1131,14 @@ void termobj( long traddr )
     return;
 }
 
-void termsym( long traddr )
+void termsym( int32_t traddr )
 {
     if ( sp != 0 ) flushsym(output_mode);
     if (output_mode == OUTPUT_HEX )
     {
         strcpy(sline,"%ll8kk");
         sp = sline+6;
-        sp += formvar((unsigned long)traddr,sp);
+        sp += formvar((uint32_t)traddr,sp);
         symcs = varcs + 8;
         if ( ( sline+outx_swidth - sp ) < 2 )
         {
@@ -1245,7 +1245,7 @@ void outid( FILE *fp, int mode )
             s += strlen(s)+1;
 #ifndef VMS
             rsize = s-oline;
-            fwrite((char *)&rsize,sizeof(short),1,fp);
+            fwrite((char *)&rsize,sizeof(int16_t),1,fp);
             even_odd = rsize&1;
 #endif
             fwrite(oline,(int)(s-oline)+even_odd,1,fp);
@@ -1274,7 +1274,7 @@ static int outtstcommon(char *asc, int alen, EXP_stk *exp, char *olcmd, int vlda
             *s++ = 0;
 #ifndef VMS
             rsize = s-eline;
-            fwrite(&rsize,sizeof(short),1,outxabs_fp);
+            fwrite(&rsize,sizeof(int16_t),1,outxabs_fp);
             even_odd = rsize&1;
 #endif
             fwrite(eline,(int)(s-eline)+even_odd,1,outxabs_fp); /* write it */
@@ -1324,7 +1324,7 @@ int out_dbgod( int mode, FILE *absfp, FN_struct *fnp )
                 ss = slp->segp;
                 segp = ss->seg_spec;
                 if (segp->seg_first != 0) ss = segp->seg_first;
-                fprintf(absfp,".dbgsec %%%d %ld %ld %ld\n",
+                fprintf(absfp,".dbgsec %%%d %d %d %d\n",
                         ss->ss_ident,segp->seg_base,segp->seg_len,
                         segp->seg_offset);
             } while ((slp=slp->next) != 0);
@@ -1346,7 +1346,7 @@ int out_dbgod( int mode, FILE *absfp, FN_struct *fnp )
         s += strlen(s)+1;
 #ifndef VMS
         rsize = s-eline;
-        fwrite(&rsize,sizeof(short),1,absfp);
+        fwrite(&rsize,sizeof(int16_t),1,absfp);
         even_odd = rsize&1;
 #endif
         fwrite(eline,(int)(s-eline)+even_odd,1,absfp); /* write it */
@@ -1381,7 +1381,7 @@ int out_dbgod( int mode, FILE *absfp, FN_struct *fnp )
                 s += strlen(s)+1;
                 rsize = s-eline;
 #ifndef VMS
-                fwrite(&rsize,sizeof(short),1,absfp);
+                fwrite(&rsize,sizeof(int16_t),1,absfp);
                 even_odd = rsize&1;
 #endif
                 fwrite(eline,(int)rsize+even_odd,1,absfp); /* write it */

@@ -25,9 +25,9 @@
 #if 0
 extern void free_rm_mem(RM_control **);
 extern RM_control *clone_rm_mem(RM_control *), *rm_control;
-extern void add_to_reserve(unsigned long start, unsigned long len);
-extern int check_reserve(unsigned long start, unsigned long len);
-extern int get_free_space(unsigned long len, unsigned long *start, int align);
+extern void add_to_reserve(uint32_t start, uint32_t len);
+extern int check_reserve(uint32_t start, uint32_t len);
+extern int get_free_space(uint32_t len, uint32_t *start, int align);
 extern void outseg_def();
 #endif
 
@@ -36,15 +36,15 @@ extern void outseg_def();
  * specified address. It checks that it doesn't overlay another region
  * already allocated and reports same if so, but places it there anyway.
  */
-static unsigned long seg_place(
+static uint32_t seg_place(
 /*
  * At entry:
  */
 struct ss_struct *ms,       /* pointer to segment to place */
 struct ss_struct *grp_nam,  /* pointer to group */
-unsigned long base,     /* base address to place it */
-unsigned long offset,       /* offset address to place it */
-unsigned long len,      /* amount of space to reserve */
+uint32_t base,     /* base address to place it */
+uint32_t offset,       /* offset address to place it */
+uint32_t len,      /* amount of space to reserve */
 int chk)            /* if true, check for overlap */
 /*
  * At exit:
@@ -56,11 +56,11 @@ int chk)            /* if true, check for overlap */
     char *s;
     if (offset != 0)
     {
-        unsigned long toff;
+        uint32_t toff;
         toff = base+offset;
         if (chk && check_reserve(toff,len))
         {     /* TRUE if in reserved mem list */
-            s = options->octal ? "Segment {%s} at %010lo OUTPUT's at %010lo overwriting another segment or reserved mem":
+            s = qual_tbl[QUAL_OCTAL].present ? "Segment {%s} at %010lo OUTPUT's at %010lo overwriting another segment or reserved mem":
                 "Segment {%s} at %08lX OUTPUT's at %08lX overwriting another segment or reserved mem";
             sprintf (emsg,s,ms->ss_string,base,toff);
             err_msg(MSG_WARN,emsg);
@@ -72,7 +72,7 @@ int chk)            /* if true, check for overlap */
     {
         if (chk && check_reserve(base,len))
         {  /* TRUE if in reserved mem list */
-            s = options->octal ? "Segment {%s} at %010lo overlays another segment or reserved mem":
+            s = qual_tbl[QUAL_OCTAL].present ? "Segment {%s} at %010lo overlays another segment or reserved mem":
                 "Segment {%s} at %08lX overlays another segment or reserved mem";
             sprintf (emsg, s, ms->ss_string, base);
             err_msg(MSG_WARN,emsg);
@@ -91,15 +91,15 @@ int chk)            /* if true, check for overlap */
  * or after a specified address. If it won't fit within the range specified,
  * it'll complain but put it there anyway.
  */
-static unsigned long seg_fit(
+static uint32_t seg_fit(
 /*
  * At entry:
  */
 struct ss_struct *ms,       /* pointer to segment to place */
 struct ss_struct *grp_nam,  /* pointer to group */
-unsigned long base,     /* base address to place it */
-unsigned long offset,       /* offset address to place it */
-unsigned long len,      /* amount of space to reserve */
+uint32_t base,     /* base address to place it */
+uint32_t offset,       /* offset address to place it */
+uint32_t len,      /* amount of space to reserve */
 int align,          /* minimum alignment to accept */
 int chk)            /* if true, check for overlap */
 /*
@@ -109,7 +109,7 @@ int chk)            /* if true, check for overlap */
  */
 {
     struct seg_spec_struct *seg_ptr;
-    unsigned long c_base = base;
+    uint32_t c_base = base;
     char *s;
     base += align;
     base &= ~align;
@@ -118,7 +118,7 @@ int chk)            /* if true, check for overlap */
     {
         if (chk)
         {
-            s = options->octal ? "No room for segment {%s} based at %010lo\n":
+            s = qual_tbl[QUAL_OCTAL].present ? "No room for segment {%s} based at %010lo\n":
                 "No room for segment {%s} based at %08lX\n";
             sprintf (emsg,s,ms->ss_string,base);
             err_msg(MSG_ERROR,emsg);
@@ -170,15 +170,19 @@ static void swap_segs(SS_struct **one, SS_struct **two)
     return;
 }
 
-#define UL unsigned long
-
 void dump_segtree( SS_struct *a )
 {
     fprintf(stderr,"Dumping tree...\n");
     while (a)
     {
-        fprintf(stderr,"cur=%08lX, next=%08lX, prev=%08lX, *prev=%08lX, more=%d, base=%08lX, len=%08lX\n",
-                (UL)a,(UL)a->ss_next,(UL)a->ss_prev,(UL)*a->ss_prev,a->flg_more,a->seg_spec->seg_base,a->seg_spec->seg_len);
+        fprintf(stderr,"cur=%p, next=%p, prev=%p, *prev=%p, more=%d, base=%08X, len=%08X\n",
+                (void *)a,
+				(void *)a->ss_next,
+				(void *)a->ss_prev,
+				(void *)*a->ss_prev,
+				a->flg_more,
+				a->seg_spec->seg_base,
+				a->seg_spec->seg_len);
         if (!a->flg_more) break;
         a = a->ss_next;
     }
@@ -260,7 +264,7 @@ void seg_locate( void )
     struct ss_struct *st,**ls,*grp_nam,*ms;
     struct grp_struct *grp_ptr;
     struct seg_spec_struct *seg_ptr,*grpseg_ptr;
-    unsigned long base, align=0, seg_len=0, next_base, bottom, top, offset;
+    uint32_t base, align=0, seg_len=0, next_base, bottom, top, offset;
     int  f_based, jj, f_fit, f_stable;
 #if 0
     int  f_reloffset=0;
@@ -464,10 +468,10 @@ void seg_locate( void )
  * memory location else locate the segment at relative 0.
  **************************************************************************/
 
-                if (jj == 0 || options->rel || grp_nam->seg_spec->sflg_reloffset)
+                if (jj == 0 || qual_tbl[QUAL_REL].present || grp_nam->seg_spec->sflg_reloffset)
                 {
                     chk_flg = 0;         /* don't complain about overlaid sections */
-                    if (options->rel) base = 0;
+                    if (qual_tbl[QUAL_REL].present) base = 0;
                 }
                 else
                 {
@@ -486,7 +490,7 @@ void seg_locate( void )
                     }
                     base += align;
                     base &= ~align;
-                    if (options->rel || (f_based && !f_fit))
+                    if (qual_tbl[QUAL_REL].present || (f_based && !f_fit))
                     {
                         seg_place(ms, grp_nam, base, offset, seg_len, chk_flg);
                     }
@@ -548,7 +552,7 @@ void seg_locate( void )
                 if (grpseg_ptr->seg_len > align)
                 {
                     sprintf(emsg,
-                            "Group {%s} exceeds maximum length by %ld bytes\n",
+                            "Group {%s} exceeds maximum length by %d bytes\n",
                             grp_nam->ss_string,grpseg_ptr->seg_len-align);
                     err_msg(MSG_WARN,emsg);
                 }               /* --if				*/

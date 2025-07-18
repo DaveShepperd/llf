@@ -45,12 +45,12 @@ extern int hashit();        /* hashing routine */
 #endif
 /* Static Globals */
 
-long sym_pool_used;
+int32_t sym_pool_used;
 SS_struct *hash[HASH_TABLE_SIZE];  /* hash table */
 SS_struct *symbol_pool=0; /* pointer to next free symbol space */
 int symbol_pool_size=0;     /* number of symbol spaces left */
 SS_struct *first_symbol=0; /* pointer to first symbol of 'duplicate' list */
-short new_symbol;       /* flag indicating that an insert happened */
+int16_t new_symbol;       /* flag indicating that an insert happened */
 /* value (can be added)	*/
 /*   1 - symbol added to symbol table */
 /*   2 - symbol added is first in hash table */
@@ -88,7 +88,7 @@ struct ss_struct *get_symbol_block( int flag )
  */
 SS_struct *sym_lookup(
                      char *strng,
-                     long slen,
+                     int32_t slen,
                      int err_flag)
 /*
  * At entry:

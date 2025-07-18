@@ -24,7 +24,7 @@
 /***************************************************************
  *
  * void insert_id(numeric_id,ptr_to_sym_struct)
- * long numeric_id;
+ * int32_t numeric_id;
  * struct seg_struct *ptr_to_sym_struct;
  *
  * This routine inserts into the ID table at the offset spec'd by
@@ -39,42 +39,49 @@
 /* Global static variables */
 
 struct ss_struct **id_table = 0; /* pointer to identifier table */
-long id_table_size=0;       /* size of id_table in int's */
-long id_table_base=0;       /* base for the current file */
-long tot_ids,max_idu;
+int32_t id_table_size=0;       /* size of id_table in int's */
+int32_t id_table_base=0;       /* base for the current file */
+int32_t tot_ids,max_idu;
 
 /* Entry */
 
-void insert_id( long id, SS_struct *id_ptr)
+void insert_id( int32_t id, SS_struct *id_ptr)
 {
     struct ss_struct **st,*sp;   /* st is pointer to pointer to ss_struct */
-    long i,k;
-    if ((i=id+id_table_base) >= id_table_size)
+    int32_t idx,kk;
+	
+	idx = id+id_table_base;
+    if (idx >= id_table_size)
     {
-        k = (i/1024l+1l)*1024l;
+        kk = (idx/1024+1)*1024;
         if (id_table == 0)
         {  /* first time, build an array */
-            if (k < 28672/sizeof(char *)) k = 28672/sizeof(char *);
-            id_table = (struct ss_struct **)MEM_calloc((unsigned int)(id_table_size=k),
-                                                       sizeof (struct ss_struct **));
+            if (kk < 28672/sizeof(char *))
+				kk = 28672/sizeof(char *);
+			id_table_size = kk;
+            id_table = (SS_struct **)MEM_calloc(id_table_size, sizeof(SS_struct **));
         }
         else
         {
             int old_sz;
             old_sz = id_table_size;
-            id_table = (struct ss_struct **)MEM_realloc((char *)id_table,
-                                                        (unsigned int)((id_table_size = k)*(sizeof(struct ss_struct **))));
-            while (old_sz<id_table_size) id_table[old_sz++] = 0;
+			id_table_size = kk;
+            id_table = (SS_struct **)MEM_realloc((char *)id_table, id_table_size*sizeof(SS_struct **));
+            while (old_sz<id_table_size)
+				id_table[old_sz++] = NULL;
         }
     }
-    if (i > max_idu) max_idu = i;
-    if ((sp = *(st = id_table+i)) != 0)
+    if (idx > max_idu)
+		max_idu = idx;
+	st = id_table+idx;
+	sp = *st;
+    if ( sp )
     {
         if (sp == id_ptr)
         {       /* reinsertion of the same ID */
             return;            /* is ok */
         }
-        sprintf (emsg,"ID number %ld redefined in %s\n\tPreviously defined to {%s} in file %s",
+        sprintf (emsg,"ID number %d redefined in %s\n\tPreviously defined to {%s} in file %s",
                  id,current_fnd->fn_buff,sp->ss_string,sp->ss_fnd->fn_buff);
         err_msg(MSG_WARN,emsg);
     }

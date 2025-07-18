@@ -144,7 +144,7 @@ int lc_get_token(int errcode, char *string, int nb)
     {
         if (j == 0) tkn_ptr = inp_ptr;
         c = get_c();          /* get a char from input */
-        if ((long)old_tokp != (long)token_pool)
+        if (old_tokp != token_pool)
         { /* token pool moved */
             int siz;
             register char *src=old_tokp,*dst=token_pool;
@@ -199,7 +199,7 @@ int lc_get_token(int errcode, char *string, int nb)
                     }
                     return EOF;
                 }
-                if ((long)old_tokp != (long)token_pool)
+                if (old_tokp != token_pool)
                 {   /* token pool moved */
                     int siz;
                     register char *src=old_tokp,*dst=token_pool;
@@ -394,7 +394,7 @@ int chk_token(int get_flg, int typ, int value, char *msg)
  *	I.e.
  *		DECLARE (x : 000);
  *		DECLARE (var1 : 1, var2 : #FFEE);
- *		DECLARE (var : TIME);	--assigns the long value returned from
+ *		DECLARE (var : TIME);	--assigns the int32_t value returned from
  *			the C RTL function time() to var.
  */
 
@@ -407,7 +407,7 @@ int lc_declare( void )
         CHK_TOKEN(1,LC_TOK_STR,0,"Expected symbol name here");
 		if ( (sym_ptr = sym_lookup(token_pool, token_value, 0)) == 0 )
 		{
-			if ( !options->quiet )
+			if ( !qual_tbl[QUAL_QUIET].present )
 			{
 				sprintf(emsg,"DECLARED symbol {%s} not present in object code",
 						token_pool);
@@ -449,10 +449,10 @@ int lc_declare( void )
 					if ( (sym_ptr->ss_value != token_value) || complex )
 					{
 						if ( complex )
-							sprintf(emsg, "DECLARED symbol {%s} attempted to re-define from <complex> to absolute 0x%08lX. Ignored DECLARE.",
+							sprintf(emsg, "DECLARED symbol {%s} attempted to re-define from <complex> to absolute 0x%08X. Ignored DECLARE.",
 									sym_ptr->ss_string, token_value);
 						else
-							sprintf(emsg, "DECLARED symbol {%s} attempted to re-define from 0x%08lX to 0x%08lX. Ignored DECLARE.",
+							sprintf(emsg, "DECLARED symbol {%s} attempted to re-define from 0x%08X to 0x%08X. Ignored DECLARE.",
 									sym_ptr->ss_string, sym_ptr->ss_value, token_value );
 						err_msg(MSG_WARN,emsg);
 						doIt = 0;
@@ -637,7 +637,7 @@ int lc_locate( void )
                 tmp_grp_name += state;
                 tmp_grp_name_size -= state;
                 tmp_grp_number++;
-                grp_ptr = get_grp_ptr(grp_nam,(long)0,(long)0); /* get a group list */
+                grp_ptr = get_grp_ptr(grp_nam,(int32_t)0,(int32_t)0); /* get a group list */
                 add_to_group(sym_ptr, grp_nam, grp_ptr); /* add first seg to list */
                 state = LOCATE_DUMMY;       /* add to dummy group list */
                 continue;
@@ -848,7 +848,7 @@ int lc_reserve( void )
  */
 {
     int state=0,cn=0;
-    unsigned long begin=0;
+    uint32_t begin=0;
     while (1)
     {
         if (lc_get_token(0,"%LLF- Premature EOF",0) == EOF )
@@ -900,7 +900,7 @@ int lc_reserve( void )
                                   "END address must be greater than START address");
                         token_value = begin;
                     }
-                    add_to_reserve(begin,(unsigned long)token_value-begin+1l);
+                    add_to_reserve(begin,(uint32_t)token_value-begin+1l);
                     state = 0;           /* back to normal */
                     continue;
                 }
@@ -916,8 +916,8 @@ int lc_reserve( void )
                         bad_token(tkn_ptr,
                                   "Ah come on, you can't reserve all of memory!");
                     }
-                    add_to_reserve((unsigned long)token_value,
-                                   (unsigned long)(-token_value));
+                    add_to_reserve((uint32_t)token_value,
+                                   (uint32_t)(-token_value));
                     state = 0;           /* back to normal */
                     continue;
                 }
@@ -1047,7 +1047,7 @@ struct
 {
     int (*lc_rout)();
     char *lc_str;
-    unsigned char lc_len;
+    uint8_t lc_len;
     unsigned int lc_flag:1;
     unsigned int lc_opt:1;
 }  lc_dispatch[] = {

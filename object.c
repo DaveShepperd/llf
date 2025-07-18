@@ -70,14 +70,14 @@
 #include "exproper.h"
 
 #ifndef VMS
-static unsigned short rsize;
+static uint16_t rsize;
 static int even_odd;
 #endif
 #if 0
 extern char emsg[];     /* space to build error messages */
 extern char *inp_str;       /* place to hold input text */
 extern char *tkn_ptr;       /* pointer to start of token */
-extern long token_value;    /* value of converted token */
+extern int32_t token_value;    /* value of converted token */
 extern int  token_type;     /* token type */
 extern char token_end;      /* terminator char for string tokens */
 extern char *token_pool;    /* pointer to free token memory */
@@ -87,13 +87,13 @@ extern struct seg_spec_struct *seg_spec_pool;  /* pointer to free segment space 
 extern int seg_spec_size;   /* size of segment pool */
 extern int debug;       /* debug options */
 extern char *null_string;   /* pointer to null ascii string */
-extern long misc_pool_used;
+extern int32_t misc_pool_used;
 #endif
 
 struct
 {
     struct ss_struct *ps_ptr;    /* array of pointers to segments */
-    unsigned long ps_name;   /* rad50 name of segment */
+    uint32_t ps_name;   /* rad50 name of segment */
 } psects[256];
 static int free_psect;      /* index into psects array */
 static int file_fd;     /* file descriptor */
@@ -110,8 +110,8 @@ static int inp_major,inp_minor;
 
 struct gsdstruct
 {
-    unsigned short gsdnm1;   /* msb of name field */
-    unsigned short gsdnm0;   /* lsb of name field */
+    uint16_t gsdnm1;   /* msb of name field */
+    uint16_t gsdnm0;   /* lsb of name field */
     unsigned int gflg_weak:1;    /* weak/strong bit */
     unsigned int gflg_shr:1; /* refers to shared region (not used) */
     unsigned int gflg_ovr:1; /* section to be overlaid */
@@ -120,14 +120,14 @@ struct gsdstruct
     unsigned int gflg_rel:1; /* relative symbol/section */
     unsigned int gflg_scp:1; /* global section (not used) */
     unsigned int gflg_dta:1; /* data section */
-    unsigned char gsdtyp;    /* gsd type */
-    short gsdvalue;      /* gsd value */
+    uint8_t gsdtyp;    /* gsd type */
+    int16_t gsdvalue;      /* gsd value */
 };
 
 struct gsdtime
 {        /* gsd time/date structure */
-    unsigned short gsdtim1;  /* msb of time longword */
-    unsigned short gsdtim0;  /* lsb of time longword */
+    uint16_t gsdtim1;  /* msb of time longword */
+    uint16_t gsdtim0;  /* lsb of time longword */
     unsigned fill1:16;       /* skip a short */
     unsigned int gsdyr:5;    /* bits 0:4 is the year since 1972 */
     unsigned int gsday:5;    /* bits 5:9 is the day */
@@ -137,10 +137,10 @@ struct gsdtime
 
 struct gsdxlate
 {       /* gsd xlator name */
-    unsigned long gsdxn;     /* name */
+    uint32_t gsdxn;     /* name */
     unsigned filler:16;      /* filler */
-    unsigned char gsderrors; /* error counter */
-    unsigned char gsdwarns;  /* warnings */
+    uint8_t gsderrors; /* error counter */
+    uint8_t gsdwarns;  /* warnings */
 };
 
 /*****************************************************************
@@ -149,7 +149,7 @@ struct gsdxlate
 
 struct gsdflags
 {
-    unsigned long gsdlong;
+    uint32_t gsdlong;
     char flags;
     unsigned fill1:8;
     unsigned fill2:16;
@@ -157,15 +157,15 @@ struct gsdflags
 
 struct r50name
 {
-    unsigned short r50msbs;
-    unsigned short r50lsbs;
+    uint16_t r50msbs;
+    uint16_t r50lsbs;
 };
 
 struct rldstruct
 {
     unsigned int rldtyp:6;   /* rld type code */
     unsigned int rldmode:2;  /* 6800 mode (6) and byte mode (7) bits */
-    unsigned char rlddsp;    /* displacement */
+    uint8_t rlddsp;    /* displacement */
 };
 
 /*******************************************************************
@@ -177,14 +177,14 @@ struct rldstruct
 
 static union
 {
-    unsigned short *rectyp;  /* object record type */
+    uint16_t *rectyp;  /* object record type */
     struct gsdstruct *gsd;   /* followed by a GSD */
     struct rldstruct *rld;   /* and an RLD */
     struct r50name *rldnam;  /* pointer to rad50 name */
-    long *rldlong;       /* pointer to a long */
-    short *rldval;       /* rld value or constant */
+    int32_t *rldlong;       /* pointer to a long */
+    int16_t *rldval;       /* rld value or constant */
     char *complex;       /* pointer to complex relocation string */
-    unsigned short *txtlda;  /* text load address */
+    uint16_t *txtlda;  /* text load address */
     char *txt;           /* text */
 /*   struct isdstruct *isd;	    there may be an ISD too */
 } obj;
@@ -212,7 +212,7 @@ static union
 #define vtype vlda.vldatype
 #define vrp vlda.vldarp
 #define vdbgfile vlda.vldadbgdfile
-long object_count;
+int32_t object_count;
 
 /*******************************************************************
  * get_obj reads a record from the input file. If the input file   *
@@ -243,7 +243,7 @@ static int get_obj( void )
 #endif
     object_count++;
 #if !defined(VMS)
-    i = read(file_fd,&rsize,sizeof(short));
+    i = read(file_fd,&rsize,sizeof(int16_t));
     even_odd = rsize&1;
 #else
     i = read(file_fd,inp_str,MAX_TOKEN);
@@ -282,7 +282,7 @@ static int d5050=050*050,d50=050;
 /****************************************************************************
  * r50div - convert a short containing rad50 code to an ASCII stream
  */
-static void r50div( unsigned short r50 )
+static void r50div( uint16_t r50 )
 /*
  * At entry:
  *	r50 - is the short containing the rad50 code
@@ -496,7 +496,7 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
                 sym_ptr->flg_abs = ~gsdptr->gflg_rel;
                 seg_ptr->seg_salign = !gsdptr->gflg_dta; /* set the alignment factor */
                 seg_ptr->seg_dalign = 0;        /* set data alignment factor */
-                seg_ptr->seg_len = (unsigned short)gsdptr->gsdvalue;
+                seg_ptr->seg_len = (uint16_t)gsdptr->gsdvalue;
                 if (!(new_symbol & 4) &&        /* if not a duplicate symbol */
                     !sym_ptr->flg_member)
                 {   /* and not already a group member */
@@ -506,7 +506,7 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
                         {
                             abs_group_nam = get_symbol_block(1);
                             abs_group_nam->ss_string = "Absolute_sections";
-                            abs_group = get_grp_ptr(abs_group_nam,(long)0,(long)0);
+                            abs_group = get_grp_ptr(abs_group_nam,(int32_t)0,(int32_t)0);
                             abs_group_nam->ss_fnd = current_fnd;
                             abs_group_nam->flg_based = 1;
                             abs_group_nam->seg_spec->sflg_absolute = 1;
@@ -520,7 +520,7 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
                             base_page_nam = get_symbol_block(1);
                             base_page_nam->ss_string = "Zero_page_sections";
                             base_page_nam->ss_fnd = current_fnd;
-                            base_page_grp = get_grp_ptr(base_page_nam,(long)0,(long)0);
+                            base_page_grp = get_grp_ptr(base_page_nam,(int32_t)0,(int32_t)0);
                             base_page_nam->flg_based = 1;
                             base_page_nam->seg_spec->seg_maxlen = 256;
                             base_page_nam->seg_spec->sflg_zeropage = 1;
@@ -605,8 +605,9 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
         case 4: {      /* Global symbol name */
                 rad50_to_ascii((struct r50name *)gsdptr); /* put ascii in token_pool */
                 sym_ptr = new_sym(1);
-                insert_id((long)current_fnd->fn_max_id++,sym_ptr);
-                if (options->cross) do_xref_symbol(sym_ptr,gsdptr->gflg_def);
+                insert_id((int32_t)current_fnd->fn_max_id++,sym_ptr);
+                if (qual_tbl[QUAL_CROSS].preesnt)
+					do_xref_symbol(sym_ptr,gsdptr->gflg_def);
                 if (gsdptr->gflg_def)
                 {     /* if symbol being defined */
                     if (current_fnd->fn_stb)
@@ -655,7 +656,7 @@ static void do_gsd( int len, struct gsdstruct *gsdptr )
 
 struct ss_struct *get_psect( char *strng )
 {
-    unsigned long psname;
+    uint32_t psname;
     struct ss_struct *sym_ptr;
     int i;
     if ((psname = *obj.rldlong++) == 0)
@@ -997,7 +998,7 @@ static void do_rld( int len )
                         }
                     case 10: {        /* store immediate */
                             if (!type) break;  /* nothing to write */
-                            write_to_tmp(TMP_EXPR,(long)type,(char *)expr_stack,sizeof(struct expr_token));
+                            write_to_tmp(TMP_EXPR,(int32_t)type,(char *)expr_stack,sizeof(struct expr_token));
                             write_to_tmp(TMP_TAG,1l,&mode_chars[mode],1);
                             exp = expr_stack;      /* reset the stack pointer */
                             break;     /* break out of switch */
@@ -1009,7 +1010,7 @@ static void do_rld( int len )
                             (exp++)->expr_value = 1 + (mode < 2);  
                             exp->expr_code = EXPR_OPER;
                             exp->expr_value = '-';
-                            write_to_tmp(TMP_EXPR,(long)(type+2),(char *)expr_stack,sizeof(struct expr_token));
+                            write_to_tmp(TMP_EXPR,(int32_t)(type+2),(char *)expr_stack,sizeof(struct expr_token));
                             write_to_tmp(TMP_TAG,1l,&mode_chars[mode],1);
                             exp = expr_stack;      /* reset the stack pointer */
                             break;     /* break out of switch */
@@ -1109,7 +1110,7 @@ static void do_rld( int len )
 #endif
 
 static char tag;
-static long taglen;
+static int32_t taglen;
 
 /************************************************************************
  * inp_vldaexp - input an expression from a vlda record
@@ -1163,17 +1164,17 @@ static void inp_vldaexp( char *ptr )
         case VLDA_EXPR_L:
         case VLDA_EXPR_B:
             expr->expr_code = (ve_code == VLDA_EXPR_L) ? EXPR_L : EXPR_B;
-            expr->expr_ptr = (SS_struct *)*(id_table+id_table_base+ *ve.vexp_ident++);
+            expr->ss_ptr = id_table[id_table_base+ *ve.vexp_ident++];
             goto vldainp_comm1;
         case VLDA_EXPR_CSYM:   /* symbol or segment */
         case VLDA_EXPR_SYM:    /* symbol or segment */
             expr->expr_code = EXPR_IDENT;
-            expr->expr_ptr = (SS_struct *)((ve_code == VLDA_EXPR_CSYM) ? 
-                                           (id_table_base+ (*ve.vexp_byte++ & 0xFF)):
-                                           (id_table_base+ *ve.vexp_ident++));
-            vldainp_comm1:
+            expr->ss_id = (ve_code == VLDA_EXPR_CSYM) ? 
+                          (id_table_base+ (*ve.vexp_byte++ & 0xFF)):
+                          (id_table_base+ *ve.vexp_ident++);
+vldainp_comm1:
             expr->expr_value = 0;
-            if (expr->expr_ptr == 0)
+            if ( !expr->ss_ptr && !expr->ss_id )
             {
                 sprintf(emsg,"Ident %d not defined but used in expression in \"%s\"",
                         *(ve.vexp_ident-1),current_fnd->fn_buff);
@@ -1233,7 +1234,8 @@ static void inp_vldaexp( char *ptr )
                     }
                     else if (t == 6)
                     { /* sos is VALUE, tos is SYM */
-                        sos->expr_ptr = tos->expr_ptr;
+                        sos->ss_ptr = tos->ss_ptr;
+						sos->ss_id = tos->ss_id;
                         sos->expr_code = EXPR_SYM;
                         if (tok == EXPROPER_ADD)
                         {
@@ -1300,7 +1302,7 @@ void object( int fd )
         {
             int rectyp;
 #if defined(VMS) && defined(RT11_RSX)
-            obj.rectyp = (unsigned short *)inp_str; /* point to the string */
+            obj.rectyp = (uint16_t *)inp_str; /* point to the string */
 #endif
             vrp = inp_str;
             if (token_pool_size <= MAX_TOKEN )
@@ -1343,7 +1345,7 @@ void object( int fd )
                     last_txt_org = *obj.rldval++ & 65535; /* remember load address of txt */
                     last_txt_end = curr_pc = last_txt_org + length-4;
                     last_txt_seg = curr_seg; /* remember the segment too */
-                    write_to_tmp(TMP_BSTNG,(long)(length-4),(char *)obj.txt,1);
+                    write_to_tmp(TMP_BSTNG,(int32_t)(length-4),(char *)obj.txt,1);
                     continue;
                 }
             case 4: {           /* RLD */
@@ -1361,7 +1363,7 @@ void object( int fd )
                             {
                                 for (i=0;i<free_psect;i++)
                                 {
-                                    psects[(short)i].ps_ptr->seg_spec->seg_salign = 0;
+                                    psects[(int16_t)i].ps_ptr->seg_spec->seg_salign = 0;
                                 }
                             }
                         }
@@ -1371,7 +1373,7 @@ void object( int fd )
 #endif
             case VLDA_TXT: {    /* text */
                     vlda_inp = 1;    /* vlda input */
-                    write_to_tmp(TMP_BSTNG,(long)(length-sizeof(struct vlda_abs)),
+                    write_to_tmp(TMP_BSTNG,(int32_t)(length-sizeof(struct vlda_abs)),
                                  inp_str+sizeof(struct vlda_abs),1);
                     continue;
                 }
@@ -1402,7 +1404,7 @@ void object( int fd )
                         {
                             if ((seg_ptr=get_seg_spec_mem(sym_ptr)) == 0) continue;
                         }
-                        insert_id((long)vseg->vseg_ident,sym_ptr);
+                        insert_id((int32_t)vseg->vseg_ident,sym_ptr);
                         sym_ptr->flg_defined = 1;     /* .seg defines the segment */
                         sym_ptr->flg_segment = 1;     /* signal its a segment */
                         sym_ptr->flg_ovr = (vseg->vseg_flags&VSEG_OVR) != 0;
@@ -1424,7 +1426,7 @@ void object( int fd )
                                 {
                                     abs_group_nam = get_symbol_block(1);
                                     abs_group_nam->ss_string = "Absolute_sections";
-                                    abs_group = get_grp_ptr(abs_group_nam,(long)0,(long)0);
+                                    abs_group = get_grp_ptr(abs_group_nam,(int32_t)0,(int32_t)0);
                                     abs_group_nam->ss_fnd = current_fnd;
                                     abs_group_nam->flg_based = 1;
                                     abs_group_nam->seg_spec->sflg_absolute = 1;
@@ -1440,7 +1442,7 @@ void object( int fd )
                                         base_page_nam = get_symbol_block(1);
                                         base_page_nam->ss_string = "Zero_page_sections";
                                         base_page_nam->ss_fnd = current_fnd;
-                                        base_page_grp = get_grp_ptr(base_page_nam,(long)0,(long)0);
+                                        base_page_grp = get_grp_ptr(base_page_nam,(int32_t)0,(int32_t)0);
                                         base_page_nam->flg_based = 1;
                                         base_page_nam->seg_spec->seg_maxlen = 256;
                                         base_page_nam->seg_spec->sflg_zeropage = 1;
@@ -1532,9 +1534,9 @@ void object( int fd )
                             {
                                 sym_ptr = new_sym(1);
                             }
-                            insert_id((long)vsym->vsym_ident,sym_ptr);
+                            insert_id((int32_t)vsym->vsym_ident,sym_ptr);
                         }
-                        if (options->cross && !(vsym->vsym_flags&VSYM_LCL) )
+                        if (qual_tbl[QUAL_CROSS].present && !(vsym->vsym_flags&VSYM_LCL) )
                             do_xref_symbol(sym_ptr,(vsym->vsym_flags&VSYM_DEF) != 0);
                         if (vsym->vsym_flags&VSYM_DEF)
                         {  /* if symbol being defined */
@@ -1572,7 +1574,7 @@ void object( int fd )
 									}
 								}
                             }
-                            if (!chk_mdf(1,sym_ptr,options->quiet))
+                            if (!chk_mdf(1,sym_ptr,qual_tbl[QUAL_QUIET].present))
 							{
 								continue; /* nfg */
 							}
@@ -1612,7 +1614,7 @@ void object( int fd )
             case VLDA_ORG: {
                     vlda_inp = 1;    /* vlda input */
                     inp_vldaexp((char *)(vtype+1)); /* unpack the expression */
-                    write_to_tmp(TMP_ORG,(long)expr_stack_ptr,(char *)expr_stack,sizeof(struct expr_token));
+                    write_to_tmp(TMP_ORG,(int32_t)expr_stack_ptr,(char *)expr_stack,sizeof(struct expr_token));
                     continue;
                 }
             case VLDA_XFER: {
@@ -1628,7 +1630,7 @@ void object( int fd )
                         continue;
                     }
                     xfer_fnd = current_fnd;
-                    write_to_tmp(TMP_START,(long)expr_stack_ptr,(char *)expr_stack,sizeof(struct expr_token));
+                    write_to_tmp(TMP_START,(int32_t)expr_stack_ptr,(char *)expr_stack,sizeof(struct expr_token));
                     continue;
                 }
             case VLDA_ID: {
@@ -1644,7 +1646,7 @@ void object( int fd )
                     }
                     if (inp_minor < VLDA_MINOR)
                     {
-                        if (options->err)
+                        if (qual_tbl[QUAL_ERR].present)
                         {
                             sprintf(emsg,"Object file format in \"%s\" is obsolete. Suggest you remake it.",
                                     current_fnd->fn_buff);
@@ -1698,16 +1700,16 @@ void object( int fd )
                     ii = 0;
                     if (rectyp == VLDA_BOFF) ii = 1;
                     else if (rectyp == VLDA_OOR) ii = 2;
-                    write_to_tmp(tmp_opr[ii], (long)expr_stack_ptr,(char *)expr_stack,
+                    write_to_tmp(tmp_opr[ii], (int32_t)expr_stack_ptr,(char *)expr_stack,
                                  sizeof(struct expr_token));
                     strng += vtst->vtest_soff;
-                    write_to_tmp(TMP_ASTNG,(long)strlen(strng),strng,sizeof(char));
+                    write_to_tmp(TMP_ASTNG,(int32_t)strlen(strng),strng,sizeof(char));
                     continue;
                 }
             case VLDA_EXPR: {
                     vlda_inp = 1;    /* vlda input */
                     inp_vldaexp((char *)(vtype+1));
-                    write_to_tmp(TMP_EXPR,(long)expr_stack_ptr,(char *)expr_stack,
+                    write_to_tmp(TMP_EXPR,(int32_t)expr_stack_ptr,(char *)expr_stack,
                                  sizeof(struct expr_token));
                     if (taglen == 0) taglen = 1;
                     write_to_tmp(TMP_TAG,taglen,&tag,1);

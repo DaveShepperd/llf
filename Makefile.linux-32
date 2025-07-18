@@ -1,16 +1,16 @@
-# This is for a 32 bit PiOS version (Debian 32 bit on a Raspberry Pi). Only test on a Pi5.
+# This is for a generic Linux build
 # For now, llf has to be built to run in 32 bit mode.
 
-HOST_MACH = 
+HOST_MACH = -m32
 DELIM = '
-PiOS32 = 1
+PiOS32 = 0
 LINUX = 1
 MSYS2 = 0
 MINGW = 0
-EXTRA_DEFINES =
+EXTRA_DEFINES = -DM_UNIX 
 EXTRA_CHKS =
-DBG =
-OPT = -O
+DBG = #-g
+OPT = -O2
 CC = gcc
 ECHO = /bin/echo -e
 RM = rm -f

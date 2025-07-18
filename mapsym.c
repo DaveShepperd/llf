@@ -27,7 +27,7 @@
 #include "header.h"
 #include "qksort.h"
 
-static long tot_lcl,tot_rel,tot_gbl,tot_udf;
+static int32_t tot_lcl,tot_rel,tot_gbl,tot_udf;
 static struct ss_struct **sorted_symbols=0;
 
 /**************************************************************************
@@ -43,12 +43,12 @@ void sort_symbols( void )
  *	  will be tot_gbl + tot_lcl entries and terminated with null.
  */
 {
-    long i,j,ret;
+    int32_t i,j,ret;
     struct ss_struct **ls,*st,*ost=0,**spp;
 
     for (j=i=0;i<HASH_TABLE_SIZE;i++)
     {
-        if ((st=hash[(short)i]) != 0)
+        if ((st=hash[(int16_t)i]) != 0)
         {
             do
             {
@@ -73,7 +73,7 @@ void sort_symbols( void )
         sorted_symbols = ls;
         for (i=ret=0;i<HASH_TABLE_SIZE;i++)
         {
-            if ((st=hash[(short)i]) != 0)
+            if ((st=hash[(int16_t)i]) != 0)
             {
                 do
                 {
@@ -88,7 +88,7 @@ void sort_symbols( void )
         *ls = 0;              /* terminate the array */
         if (ret > j)
         {
-            sprintf(emsg,"Counted %ld syms but tried to sort %ld",j,ret);
+            sprintf(emsg,"Counted %d syms but tried to sort %d",j,ret);
             err_msg(MSG_ERROR,emsg);
         }
         qksort(sorted_symbols,(unsigned int)j);
@@ -172,6 +172,7 @@ void puts_map( char *string, int lines )
             while (*string)
             {
                 char *space=0;
+				int sLen;
                 s = string;
                 for (j=0; j < columns_per_line && *s; ++j, ++s)
                 {
@@ -188,7 +189,8 @@ void puts_map( char *string, int lines )
                 {
                     space = s;
                 }
-                fprintf(map_fp, "%*.*s\n", space-string, space-string, string);
+				sLen = space-string;
+                fprintf(map_fp, "%*.*s\n", sLen , sLen, string);
                 if (*s == '\n') ++s;        /* if stopped on a \n, eat it */
                 map_line -= 1;
                 string = s;
@@ -229,7 +231,7 @@ static char *group_control_stringn0=0;
 
 static void dump_available( void )
 {
-    unsigned long low;
+    uint32_t low;
     struct rm_struct *rm;
     map_subtitle = "Available areas in the address space\n\n Start  -  End      Size\n-------- --------  --------\n";
     if (map_line < 6)
@@ -249,15 +251,24 @@ static void dump_available( void )
 		{         /* as long as there is something */   
 			if (rm->rm_start > low)
 			{
-				sprintf(emsg,"%08lX-%08lX  %08lX\n",
-						low,rm->rm_start-1,rm->rm_start-low);
+				if ( qual_tbl[QUAL_OCTAL].present )
+					sprintf(emsg, "%08o-%08o  %08o\n",
+							low&0xFFFFFF,
+							(rm->rm_start-1)&0xFFFFFF,
+							(rm->rm_start-low)&0xFFFFFF);
+				else
+					sprintf(emsg, "%08X-%08X  %08X\n",
+							low,rm->rm_start-1,rm->rm_start-low);
 				puts_map(emsg,1);
 			}
 			low = rm->rm_start+rm->rm_len;
 			rm = rm->rm_next;
 		}
 	}
-    sprintf(emsg,"%08lX-FFFFFFFF  %08lX\n", low, low==0 ? -1l : 0-low);
+	if ( qual_tbl[QUAL_OCTAL].present )
+		sprintf(emsg, "%08o-77777777  %08o\n", low&0xFFFFFF, (low == 0 ? -1 : 0 - low)&0xFFFFFF);
+	else
+		sprintf(emsg, "%08X-FFFFFFFF  %08X\n", low, low == 0 ? -1 : 0 - low);
     puts_map(emsg,1);
     return;
 }
@@ -273,7 +284,7 @@ static void map_seg_summary( void )
  *	map file contains segment listing
  */
 {
-    long i;
+    int32_t i;
     struct ss_struct *ms,*st,**ls,*grp_nam;
     struct grp_struct *grp_ptr;
     struct seg_spec_struct *seg_ptr,*grp_seg;
@@ -282,7 +293,7 @@ static void map_seg_summary( void )
     map_subtitle = 0;        /* no subtitle */
     misc_pool_used += 280;
     map_subtitle = MEM_alloc(280);
-    if (options->octal)
+    if (qual_tbl[QUAL_OCTAL].present)
     {
         group_control_stringn0 = "%-24.24s %011lo %011lo %011lo %011lo\n";
         group_control_string0  = "%-24.24s %011lo %011lo %011lo\n";
@@ -344,7 +355,7 @@ static void map_seg_summary( void )
         grp_seg = (grp_nam = st->seg_spec->seg_group)->seg_spec;
         while ((st = *ls++) != 0)
         {
-            unsigned long nxtbeg;          /* holds the next expected address */
+            uint32_t nxtbeg;          /* holds the next expected address */
             char *lastSegName,*tmpSegName;
 
             if (st == (struct ss_struct *)-2l) continue;
@@ -356,7 +367,7 @@ static void map_seg_summary( void )
             {
                 if (!i++)
                 {
-                    long end = grp_seg->seg_len;
+                    int32_t end = grp_seg->seg_len;
                     end += (end == 0) ? grp_nam->ss_value : grp_nam->ss_value-1;
                     if (grp_seg->seg_maxlen != 0)
                     {
@@ -386,7 +397,7 @@ static void map_seg_summary( void )
             {
                 if ((seg_ptr=ms->seg_spec)->seg_len != 0)
                 {
-                    long lalign,lim;
+                    int32_t lalign,lim;
                     char chr;
                     lalign = 1<<seg_ptr->seg_salign;
                     chr = ms->flg_ovr ? 'c':' ';
@@ -480,7 +491,7 @@ void mapsym( void )
     {
         map_seg_summary();
         map_subtitle = "Symbol summary\n\n";
-        if (options->octal)
+        if (qual_tbl[QUAL_OCTAL].present)
         {
             sym_control_string = "%-14.14s %010lo \n";
             sym_control_string_xr = "%-14.14s %010lo\n";
@@ -502,7 +513,7 @@ void mapsym( void )
         if ((ls = sorted_symbols) != 0)
         { /* point to symbols */
             int map_page_size = 132*60;
-            if (!options->cross)
+            if (!qual_tbl[QUAL_CROSS].present)
             {     /* not cross reference mode */
                 misc_pool_used += 132*60;
                 map_page = MEM_alloc(132*60);   /* get a whole map page of memory */
@@ -588,13 +599,13 @@ void mapsym( void )
             }              /* --if cross reference*/
             if (MEM_free(map_page))
             { /* give back the map page */
-                sprintf(emsg,"Error free'ing %d bytes at %08lX from map_page",
-                        map_page_size, (unsigned long)map_page);
+                sprintf(emsg,"Error free'ing %d bytes at %p from map_page",
+                        map_page_size, (void *)map_page);
                 err_msg(MSG_WARN,emsg);
             }
         }                 /* --if symbols */
     }                    /* --if map_fp	*/
-    if (tot_udf != 0 && !options->rel)
+    if (tot_udf != 0 && !qual_tbl[QUAL_REL].present)
     {
         if ((ls = sorted_symbols) != 0)
         { /* if any symbols */
@@ -625,7 +636,7 @@ void mapsym( void )
                         nsp = nsp->seg_spec->seg_first;   /* point to first one in chain */
                         if (sizep)
                         {          /* he wants the size of the segment */
-                            unsigned long start, end;
+                            uint32_t start, end;
                             start = nsp->ss_value; /* remember the top */
                             while (nsp->flg_more)
                             {    /* loop through all the segments */
@@ -650,7 +661,7 @@ void mapsym( void )
     {         /* if any undefined's */
         if ((ls = sorted_symbols) != 0)
         { /* if any symbols */
-            if (map_fp && tot_udf && (!options->rel || options->err))
+            if (map_fp && tot_udf && (!qual_tbl[QUAL_REL].present || qual_tbl[QUAL_ERR].present))
             {
                 map_subtitle = "Undefined symbol summary\n\n";
                 puts_map("\n",1);       /* skip a line */
@@ -660,11 +671,11 @@ void mapsym( void )
             {     /* report undefined */
                 if (!st->flg_defined)
                 {
-                    if (options->rel)
+                    if (qual_tbl[QUAL_REL].present)
                     {  /* if relative, output reference */
                         outsym_def(st,output_mode); /* external reference */
                     }
-                    if (!options->rel || options->err)
+                    if (!qual_tbl[QUAL_REL].present || qual_tbl[QUAL_ERR].present)
                     {
                         if (!st->flg_local)
                         {
@@ -709,7 +720,7 @@ void sym_stats( void )
     {
         for (i=0;i<HASH_TABLE_SIZE;i++,j=0)
         {
-            if ((st=hash[(short)i]) != 0)
+            if ((st=hash[(int16_t)i]) != 0)
             {
                 ++ht_count;         /* a hash table entry */
                 tot_seg += st->flg_segment;
@@ -734,15 +745,15 @@ void sym_stats( void )
         sprintf (emsg,"\tchain_max: %d, chain_min: %d, chain_avg: %d\n",
                  chain_max,i?chain_min:0,i);
         puts_map(emsg,1);
-        sprintf (emsg,"\ttotal segments: %d, total global sym entries: %d, glob syms: %ld\n",
+        sprintf (emsg,"\ttotal segments: %d, total global sym entries: %d, glob syms: %d\n",
                  tot_seg,j=ht_count+coll-tot_seg,tot_gbl);
         puts_map(emsg,1);
-        sprintf (emsg,"\ttotal local symbols: %ld\n",tot_ids-j);
+        sprintf (emsg,"\ttotal local symbols: %d\n",tot_ids-j);
         puts_map(emsg,1);
-        sprintf (emsg,"\ttotal ID's used: %ld, maximum ID # used : %ld\n",
+        sprintf (emsg,"\ttotal ID's used: %d, maximum ID # used : %d\n",
                  tot_ids,max_idu);
         puts_map(emsg,1);
-        sprintf (emsg,"\ttotal ID's allocated: %ld, total ID's unused: %ld\n",
+        sprintf (emsg,"\ttotal ID's allocated: %d, total ID's unused: %d\n",
                  id_table_size,id_table_size-tot_ids);
         puts_map(emsg,1);
     }

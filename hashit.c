@@ -29,7 +29,7 @@
 
 /* Entry */
 
-int hashit( char *strng, int hash_size )
+unsigned int hashit( char *strng, int hash_size )
 {
     unsigned int hashv;
     unsigned char c;

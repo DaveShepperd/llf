@@ -2,7 +2,7 @@
 # LLF makefile
 # 080915 - D. Shepperd
 
-A1 = llf.o gc.o gctable.o pass1.o pass2.o memmgt.o symbol.o reserve.o
+A1 = llf.o gc.o pass1.o pass2.o memmgt.o symbol.o reserve.o
 A2 = hashit.o insert_id.o lc.o grpmgr.o reloc.o symdef.o help.o 
 A3 = outx.o mapsym.o object.o qksort.o err2str.o add_defs.o timer.o 
 
@@ -12,17 +12,32 @@ AC3 = outx.c mapsym.c object.c qksort.c err2str.c add_defs.c timer.c
 
 OBJ_FILES = $(A1) $(A2) $(A3)
 
-ALLH = version.h token.h structs.h header.h add_defs.h
+ALLH  = add_defs.h 
+ALLH += exproper.h
+ALLH += formats.h
+ALLH += header.h
+ALLH += memmgt.h
+ALLH += pragma1.h
+ALLH += pragma.h
+ALLH += qksort.h
+ALLH += qualtbl.h
+ALLH += segdef.h
+ALLH += structs.h
+ALLH += token.h
+ALLH += version.h
+ALLH += vlda_structs.h
 
 # Extra defines available #-DALIGNMENT=2 #-DBIG_ENDIAN #-DDEBUG_MALLOC #-DDEBUG_LINK 
-DEFINES = -DLLF -DM_UNIX -DEXTERNAL_PACKED_STRUCTS -D_ISOC99_SOURCE
+DEFINES = -DLLF -DEXTERNAL_PACKED_STRUCTS -D_ISOC99_SOURCE
 DEFINES += $(EXTRA_DEFINES)
 
 INCS = -I.
 
+HERE = ./
 EXE =
 ifeq ($(MINGW),1)
 	EXE = .exe
+	HERE = .\\
 endif
 ifeq ($(MSYS2),1)
 	EXE = .exe
@@ -35,6 +50,7 @@ C = $(CC) -c $(CFLAGS)
 D = $(CC) -c $(CFLAGS)
 L = $(CC) $(DBG) $(HOST_MACH)
 MAKEFILE = Makefile.common
+ALLH += $(MAKEFILE)
 
 default: llf$(EXE) vecextract$(EXE) 
 	$(ECHO) $(DELIM)    Done...$(DELIM)
@@ -59,31 +75,42 @@ llf.ln : $(MAKEFILE)
 	$(ECHO) $(DELIM)    Compiling $<...$(DELIM)
 	$(CC) $(CFLAGS) -c -DFILE_ID_NAME=$(basename $<)_id $(SUPPRESS_FILE_ID) $<
 
-clean:
-	$(RM) *.o *.lis llf.ln llf$(EXE) vecextract$(EXE) core*
+%.E : %.c
+	$(ECHO) $(DELIM)    Compiling to .E $<...$(DELIM)
+	$(CC) $(CFLAGS) -E -DFILE_ID_NAME=$(basename $<)_id $(SUPPRESS_FILE_ID) $< > $@
 
-add_defs.o: add_defs.c add_defs.h memmgt.h
-err2str.o: err2str.c 
-gc.o: gc.c token.h structs.h add_defs.h header.h memmgt.h gcstruct.h version.h
-gctable.o: gctable.c token.h structs.h add_defs.h gcstruct.h
-grpmgr.o: grpmgr.c  token.h structs.h add_defs.h header.h memmgt.h
-hashit.o: hashit.c
-help.o: help.c memmgt.h
-insert_id.o: insert_id.c token.h structs.h add_defs.h header.h memmgt.h
-lc.o: lc.c token.h structs.h add_defs.h header.h memmgt.h
-llf.o: llf.c version.h add_defs.h token.h structs.h header.h memmgt.h
-mapsym.o: mapsym.c version.h token.h structs.h add_defs.h header.h memmgt.h qksort.h
-memmgt.o: memmgt.c 
-object.o: object.c version.h token.h structs.h add_defs.h header.h memmgt.h \
-  vlda_structs.h pragma1.h segdef.h pragma.h exproper.h
-outx.o: outx.c version.h token.h structs.h add_defs.h header.h memmgt.h \
-  vlda_structs.h pragma1.h segdef.h pragma.h exproper.h
-pass1.o: pass1.c token.h structs.h add_defs.h header.h memmgt.h exproper.h
-pass2.o: pass2.c token.h structs.h add_defs.h header.h memmgt.h vlda_structs.h pragma1.h \
-  segdef.h pragma.h
-qksort.o: qksort.c token.h structs.h add_defs.h qksort.h
-reloc.o: reloc.c version.h token.h structs.h add_defs.h header.h memmgt.h
-reserve.o: reserve.c token.h structs.h add_defs.h header.h memmgt.h
-symbol.o: symbol.c token.h structs.h add_defs.h header.h memmgt.h
-symdef.o: symdef.c token.h structs.h add_defs.h header.h memmgt.h exproper.h
-timer.o: timer.c token.h structs.h add_defs.h header.h memmgt.h
+clean:
+	$(RM) *.o *.lis *.E llf.ln llf$(EXE) vecextract$(EXE) core* qualtbl.h
+
+qualtbl.h : qualtbl.dat mk_qualtbl$(EXE) $(MAKEFILE)
+	$(ECHO) $(DELIM)    Making $@ ... $(DELIM)
+	$(HERE)mk_qualtbl > $@
+
+mk_qualtbl$(EXE) : mk_qualtbl.o $(MAKEFILE)
+	$(ECHO) $(DELIM)    Makeing $@ ... $(DELIM)
+	$L -o $@ $(filter-out $(MAKEFILE),$^)
+
+mk_qualtbl.o : mk_qualtbl.c formats.h $(MAKEFILE)
+
+add_defs.o: add_defs.c $(ALLH)
+err2str.o: err2str.c  $(ALLH)
+gc.o: gc.c  $(ALLH)
+gctable.o: gctable.c  $(ALLH)
+grpmgr.o: grpmgr.c   $(ALLH)
+hashit.o: hashit.c  $(ALLH)
+help.o: help.c  $(ALLH)
+insert_id.o: insert_id.c  $(ALLH)
+lc.o: lc.c  $(ALLH)
+llf.o: llf.c  $(ALLH)
+mapsym.o: mapsym.c  $(ALLH)
+memmgt.o: memmgt.c  $(ALLH)
+object.o: object.c  $(ALLH)
+outx.o: outx.c  $(ALLH)
+pass1.o: pass1.c  $(ALLH)
+pass2.o: pass2.c  $(ALLH)
+qksort.o: qksort.c  $(ALLH)
+reloc.o: reloc.c  $(ALLH)
+reserve.o: reserve.c  $(ALLH)
+symbol.o: symbol.c  $(ALLH)
+symdef.o: symdef.c  $(ALLH)
+timer.o: timer.c  $(ALLH)

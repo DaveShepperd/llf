@@ -27,85 +27,90 @@
 #include "vlda_structs.h"
 
 static struct exp_stk tmp_expr;
-long tmp_pool_used;
+int32_t tmp_pool_used;
 static char *last_tmp_org;
-static short tmp_length;
+static int16_t tmp_length;
 
 #if !defined(INLINE)
 	#define INLINE
 #endif
 
 #if ALIGNMENT > 0
-	#define LAY1(ptr,value) (*ptr.b8++ = (unsigned char)(value))
-	#if 0
-static INLINE char *lay2(char *p, int value)
-{
-	*p++ = value;
-	*p++ = value>>8;
-	return p;
-}
-static INLINE char *lay4(char *p, unsigned long value)
-{
-	*p++ = value;
-	*p++ = (value >>= 8);
-	*p++ = (value >>= 8);
-	*p++ = (value >>= 8);
-	return p;
-}
-		#define LAY2(ptr,value) (ptr.b8 = lay2(ptr.b8, (int)value))
-		#define LAY4(ptr,value) (ptr.b8 = lay4(ptr.b8, (long)value))
-	#else
-		#define LAY2(ptr,value) do { int vv=(value); *ptr.b8++ = (char)(vv); *ptr.b8++ = (char)(vv>>8); } while (0)
-		#define LAY4(ptr,value) do { int vv=(value); *ptr.b8++ = (char)(vv); *ptr.b8++ = (char)(vv >>= 8); \
-    					      *ptr.b8++ = (char)(vv >>= 8); *ptr.b8++ = (char)(vv >>= 8); \
-    			    } while (0)
-	#endif
+	#define LAY1(ptr,value) (*ptr.b8++ = (uint8_t)(value))
+	#define LAY2(ptr,value) do { uint32_t vv=(value); *ptr.b8++ = (char)(vv); *ptr.b8++ = (char)(vv>>8); } while (0)
+	#define LAY4(ptr,value) do { uint32_t vv=(value); \
+								*ptr.b8++ = (char)(vv); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+							} while (0)
+	#define LAY8(ptr,value) do { uint64_t vv=(value); \
+								*ptr.b8++ = (char)(vv); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+								*ptr.b8++ = (char)(vv >>= 8); \
+							} while (0)
 	#define PICK1(ptr) (*ptr.b8++)
 	#define PICK2(ptr) (ptr.ub8 += 2, ptr.ub8[-2] | (ptr.ub8[-1] << 8))
 	#define PICK4(ptr) (ptr.ub8 += 4, ptr.ub8[-4] | (ptr.ub8[-3] << 8) | (ptr.ub8[-2] << 16) | (ptr.ub8[-1] << 24))
+	#define PICK8(ptr) do { uint64_t vv=0; ptr.ub8 += 7;\
+								vv = *ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+								vv <<= 8; vv |= *--ptr.ub8; \
+							} while (0)
 	#define AMASK ((1<<ALIGNMENT)-1)
 	#define ALIGN(ptr) (((1<<ALIGNMENT) - ((int)(ptr)&AMASK)) & AMASK)
 #else
-	#define LAY1(ptr,value) *ptr.b8++ = (unsigned char)(value)
-	#define LAY2(ptr,value) *ptr.b16++ = (unsigned short)(value)
-	#define LAY4(ptr,value) *ptr.b32++ = (unsigned long)(value)
+	#define LAY1(ptr,value) *ptr.b8++ = (uint8_t)(value)
+	#define LAY2(ptr,value) *ptr.b16++ = (uint16_t)(value)
+	#define LAY4(ptr,value) *ptr.b32++ = (uint32_t)(value)
+	#define LAY8(ptr,value) *ptr.b64++ = (uint64_t)(value)
 	#define PICK1(ptr) (*ptr.b8++)
 	#define PICK2(ptr) (*ptr.b16++)
 	#define PICK4(ptr) (*ptr.b32++)
+#if __SIZEOF_PTRDIFF_T__ > 4
+	#define PICK8(ptr) (*ptr.b64++)
+#endif
 	#define ALIGN(ptr) 0
 #endif
 
-static struct tmp_struct
+typedef struct tmp_struct
 {
-	unsigned char tf_type;
+	uint8_t tf_type;
 	char tf_tag;
-	union
-	{
-		struct tmp_struct *tf_lin;
-		long tf_len;
-	} tf_ll;
-} rtmp,*tmp_ptr = 0;
+	int32_t tfLength;
+	struct tmp_struct *tfLink;
+} TmpStruct_t;
 
-#define tf_length tf_ll.tf_len
-#define tf_link   tf_ll.tf_lin
+static TmpStruct_t rtmp, *tmp_ptr;
 
-static struct tmp_struct *tmp_next = 0, *tmp_top = 0, *tmp_pool = 0;
+static TmpStruct_t *tmp_next, *tmp_top, *tmp_pool;
 static int tmp_pool_size;
-#if 0
-extern long total_mem_used;
-#endif
-static struct ss_struct *last_segment = 0;
 
-char* sqz_it(char *src, int typ, long cnt, int siz)
+static SS_struct *last_segment = 0;
+
+char *sqz_it(char *src, int typ, int32_t cnt, int siz)
 {
 	union
 	{
 		char *b8;
-		short *b16;
-		long *b32;
-		long l;
+		int16_t *b16;
+		int32_t *b32;
+#if __SIZEOF_PTRDIFF_T__ > 4
+		uint64_t *b64;
+#endif
+		int32_t l;
 	} sqz;
-	register long value;
+	register int32_t value;
 	register int itz;
 
 	sqz.b8 = ((char *)tmp_pool) + 1;   /* setup the squeezer */
@@ -183,7 +188,7 @@ char* sqz_it(char *src, int typ, long cnt, int siz)
 					}
 				case EXPR_VALUE:
 					{
-						unsigned long val;
+						uint32_t val;
 						val = (texp->expr_value >= 0) ? texp->expr_value : -texp->expr_value;
 						if ( val < 64l )
 						{
@@ -202,22 +207,26 @@ char* sqz_it(char *src, int typ, long cnt, int siz)
 							LAY2(sqz, texp->expr_value);
 							break;
 						}
-						LAY1(sqz, EXPR_VALUE | TMP_B32 | TMP_NNUM);
+						LAY1(sqz, EXPR_VALUE | TMP_B32x | TMP_NNUM);
 						LAY4(sqz, texp->expr_value);
 						break;
 					}
 				case EXPR_IDENT:
 				case EXPR_SYM:
 					{
-						unsigned long v;
+						uint32_t v;
 						if ( texp->expr_code == EXPR_SYM )
 						{
-							LAY1(sqz, EXPR_SYM | TMP_B32 | TMP_NNUM);
-							LAY4(sqz, (long)texp->expr_ptr);
+							LAY1(sqz, EXPR_SYM | TMP_B32x | TMP_NNUM);
+#if __SIZEOF_PTRDIFF_T__ == 4
+							LAY4(sqz, texp->ss_ptr);
+#else
+							LAY8(sqz, texp->ss_ptr);
+#endif
 						}
 						else
 						{
-							v = (unsigned long)texp->expr_ptr;
+							v = texp->ss_id;
 							if ( v < 128l )
 							{
 								LAY1(sqz, EXPR_IDENT | TMP_B8 | TMP_NNUM);
@@ -230,7 +239,7 @@ char* sqz_it(char *src, int typ, long cnt, int siz)
 							}
 							else
 							{
-								LAY1(sqz, EXPR_IDENT | TMP_B32 | TMP_NNUM);
+								LAY1(sqz, EXPR_IDENT | TMP_B32x | TMP_NNUM);
 								LAY4(sqz, v);
 							}
 						}
@@ -253,8 +262,12 @@ char* sqz_it(char *src, int typ, long cnt, int siz)
 				case EXPR_L:
 				case EXPR_B:
 					{
-						LAY1(sqz, texp->expr_code | TMP_B32 | TMP_NNUM);
-						LAY4(sqz, (long)texp->expr_ptr);
+						LAY1(sqz, texp->expr_code | TMP_B32x | TMP_NNUM);
+#if __SIZEOF_PTRDIFF_T__ == 4
+						LAY4(sqz, texp->ss_ptr);
+#else
+						LAY8(sqz, texp->ss_ptr);
+#endif
 					}        /* -- case */
 				}           /* -- switch expr_code */
 				++texp;
@@ -276,17 +289,21 @@ char* unsqz_it(char *src)
 {
 	union
 	{
-		unsigned char *ub8;
+		uint8_t *ub8;
 		char *b8;
-		short *b16;
-		long *b32;
-		struct tmp_struct *tsp;
-		long l;
+		int16_t *b16;
+		int32_t *b32;
+#if __SIZEOF_PTRDIFF_T__ > 4
+		uint64_t *b64;
+#endif
+		TmpStruct_t *tsp;
+		int32_t l;
 	} sqz;
 	int typ, i;
 
 	tmp_ptr = &rtmp;         /* point to local tmp_struct */
-	rtmp.tf_length = 0;          /* assume a length of 0 */
+	rtmp.tfLength = 0;       /* assume a length of 0 */
+	rtmp.tfLink = NULL;		/* no no link */
 	sqz.b8 = src;            /* setup the squeezer */
 	typ = PICK1(sqz);
 	rtmp.tf_type = typ & ~TMP_SIZE;
@@ -311,22 +328,22 @@ char* unsqz_it(char *src)
 				break;
 			case TMP_B8:
 				{
-					rtmp.tf_length = PICK1(sqz);
+					rtmp.tfLength = PICK1(sqz);
 					break;
 				}
 			case TMP_B16:
 				{
-					rtmp.tf_length = PICK2(sqz);
+					rtmp.tfLength = PICK2(sqz);
 					break;
 				}
-			case TMP_B32:
+			case TMP_B32x:
 				{
-					rtmp.tf_length = PICK4(sqz);
+					rtmp.tfLength = PICK4(sqz);
 					break;
 				}
 			}
 			tmp_pool = sqz.tsp;
-			return (sqz.b8 + rtmp.tf_length);
+			return (sqz.b8 + rtmp.tfLength);
 		}
 	case TMP_TAG:
 		{
@@ -338,17 +355,17 @@ char* unsqz_it(char *src)
 				break;
 			case TMP_B8:
 				{
-					rtmp.tf_length = PICK1(sqz);
+					rtmp.tfLength = PICK1(sqz);
 					break;
 				}
 			case TMP_B16:
 				{
-					rtmp.tf_length = PICK2(sqz);
+					rtmp.tfLength = PICK2(sqz);
 					break;
 				}
-			case TMP_B32:
+			case TMP_B32x:
 				{
-					rtmp.tf_length = PICK4(sqz);
+					rtmp.tfLength = PICK4(sqz);
 					break;
 				}
 			}
@@ -361,9 +378,9 @@ char* unsqz_it(char *src)
 	case TMP_TEST:
 	case TMP_START:
 		{
-			register struct expr_token *texp;
+			EXPR_token *texp;
 			int cnt;
-			cnt = rtmp.tf_length = PICK1(sqz); /* get the # of elements */
+			cnt = rtmp.tfLength = PICK1(sqz); /* get the # of elements */
 			expr_stack_ptr = tmp_expr.len = cnt;
 			texp = tmp_expr.ptr = expr_stack;  /* point to expression stack */
 			for (; cnt; --cnt, ++texp )
@@ -410,7 +427,7 @@ char* unsqz_it(char *src)
 								texp->expr_value = PICK2(sqz);
 								break;
 							}
-						case TMP_B32:
+						case TMP_B32x:
 							{
 								texp->expr_value = PICK4(sqz);
 								break;
@@ -418,7 +435,7 @@ char* unsqz_it(char *src)
 						}
 						if ( texp->expr_code != EXPR_IDENT )
 							continue;
-						texp->expr_ptr = (struct ss_struct *)texp->expr_value;
+						texp->ss_id = texp->expr_value;
 						/* fall through to EXPR_SYM */
 					}
 				case EXPR_SYM:
@@ -426,7 +443,11 @@ char* unsqz_it(char *src)
 						int v;
 						if ( texp->expr_code == EXPR_SYM )
 						{ /* may come here from IDENT */
-							texp->expr_ptr = (struct ss_struct *)PICK4(sqz);
+#if __SIZEOF_PTRDIFF_T__ == 4
+							texp->ss_ptr = (SS_struct *)PICK4(sqz);
+#else
+							texp->ss_ptr = (SS_struct *)PICK8(sqz);
+#endif
 						}
 						v = PICK1(sqz);
 						if ( v == 126 )
@@ -458,7 +479,7 @@ char* unsqz_it(char *src)
 /********************************************************************
  * Write a bunch of data to the temp file
  */
-void write_to_tmp(int typ, long itm_cnt, char *itm_ptr, int itm_siz)
+void write_to_tmp(int typ, int32_t itm_cnt, char *itm_ptr, int itm_siz)
 /*
  * At entry:
  *	typ - TMP_xxx value id'ing the block data
@@ -472,11 +493,11 @@ void write_to_tmp(int typ, long itm_cnt, char *itm_ptr, int itm_siz)
 	union
 	{
 		char *c;
-		long *l;
+		int32_t *l;
 		struct tmp_struct *t;
-		long lng;
+		int32_t lng;
 	} src,dst,tmp;       /* mem pointers */
-	register int itz;
+	int itz;
 
 	if ( !output_files[OUT_FN_ABS].fn_present )
 		return; /* nuthin' to do if no ABS wanted */
@@ -484,7 +505,7 @@ void write_to_tmp(int typ, long itm_cnt, char *itm_ptr, int itm_siz)
 	{
 		tmp_pool_size = MAX_TOKEN * 8;      /* get some memory */
 		tmp_pool_used += MAX_TOKEN * 8;
-		tmp_pool = (struct tmp_struct *)MEM_alloc(tmp_pool_size);
+		tmp_pool = (TmpStruct_t *)MEM_alloc(tmp_pool_size);
 		tmp_top = tmp_pool;       /* remember where the top starts */
 	}
 	tmp.t = tmp_pool;
@@ -493,22 +514,22 @@ void write_to_tmp(int typ, long itm_cnt, char *itm_ptr, int itm_siz)
 	if ( tmp_fp == 0 )
 	{
 		int tsiz;
-		tsiz = 2 * sizeof(struct tmp_struct) + itz;
+		tsiz = 2 * sizeof(TmpStruct_t) + itz;
 		if ( tmp_pool_size < tsiz )
 		{
 			if ( tsiz < MAX_TOKEN * 8 )
 				tsiz = MAX_TOKEN * 8;
 			tmp.t->tf_type = TMP_LINK; /* link to a new area */
-			tmp.t->tf_link = (struct tmp_struct *)MEM_alloc(tsiz);
+			tmp.t->tfLink = (TmpStruct_t *)MEM_alloc(tsiz);
 			tmp_pool_used += tsiz;
 			tmp_pool_size = tsiz;
-			tmp_pool = tmp.t->tf_link;
+			tmp_pool = tmp.t->tfLink;
 #if defined(DEBUG_LINK)
-			printf("Writing TMP_LINK at %08lX, align=%d. New pool at %08lX, align=%d\n",
-				   tmp.t, (int)tmp.t & 3, tmp_pool, (int)tmp_pool & 3);
+			printf("Writing TMP_LINK at %p, align=%" FMT_PTRDIF_PRFX "d. New pool at %p, align=%d\n",
+				   (void *)tmp.t, (tmp.t & 3), (void *)tmp_pool, (tmp_pool & 3));
 #endif
 			tmp.t = tmp_pool;
-			last_tmp_org = (char *)0;
+			last_tmp_org = NULL;
 		}
 		if ( typ == TMP_ORG )
 		{
@@ -527,10 +548,10 @@ void write_to_tmp(int typ, long itm_cnt, char *itm_ptr, int itm_siz)
 		{
 			last_tmp_org = (char *)0;
 		}
-		if ( !options->miser )
+		if ( !qual_tbl[QUAL_MISER].present )
 		{
 			tmp.t->tf_type = typ;      /* set the type */
-			tmp.t->tf_length = itm_cnt;    /* set the item count */
+			tmp.t->tfLength = itm_cnt;    /* set the item count */
 			if ( itm_ptr != (char *)0 )
 				tmp.t->tf_tag = *itm_ptr;    /* in case type is tag */
 			dst.t = tmp.t + 1;
@@ -609,7 +630,7 @@ int read_from_tmp(void)
 		}
 		tmps = (char *)unsqz_it((char *)tmp_top); /* unpack the text */
 		tmps += ALIGN(tmps);
-		tmp_next = (struct tmp_struct *)tmps;
+		tmp_next = (TmpStruct_t *)tmps;
 		return (rtmp.tf_type);
 	}
 	else
@@ -619,30 +640,30 @@ int read_from_tmp(void)
 		{
 			int ferr;
 #if defined(DEBUG_LINK)
-			printf("Reading  TMP_LINK at %08lX, align=%d. New link at %08lX, align=%d\n",
-				   ts, (int)ts & 3, ts->tf_length, (int)ts->tf_length & 3);
+			printf("Reading  TMP_LINK at %p, align=%" FMT_PTRDIF_PRFX "d. New link at %p, align=%d\n",
+				   (void *)ts, ts & 3, (void *)ts->tfLink, ts->tfLink & 3);
 #endif
-			ts = tmp_next = (struct tmp_struct *)ts->tf_length;
+			ts = tmp_next = (TmpStruct_t *)ts->tfLink;
 			if ( (ferr = MEM_free(tmp_top)) )
 			{ /* give back the memory */
-				sprintf(emsg, "Error (%08X) free'ing %d bytes at %08lX from tmp_pool",
-						ferr, MAX_TOKEN * 8, (unsigned long)tmp_top);
+				sprintf(emsg, "Error (%08X) free'ing %d bytes at %p from tmp_pool",
+						ferr, MAX_TOKEN * 8, (void *)tmp_top);
 				err_msg(MSG_WARN, emsg);
 			}
 			tmp_top = ts;          /* point to next top */
 		}
 		tmp_ptr = ts;             /* point to tmp pointer */
-		if ( options->miser )
+		if ( qual_tbl[QUAL_MISER].present )
 		{
 			tmps = (char *)unsqz_it((char *)tmp_ptr); /* unpack the text */
 			tmps += ALIGN(tmps);
 #if defined(DEBUG_LINK)
-			if ( (long)tmp_ptr & 3 )
-				printf("read_from_tmp: started at unaligned %08lX\n", (char *)tmp_ptr);
-			if ( (long)tmps & 3 )
-				printf("read_from_tmp: ended unaligned at %08lX\n", (char *)tmps);
+			if ( tmp_ptr & 3 )
+				printf("read_from_tmp: started at unaligned %p\n", (void *)tmp_ptr);
+			if ( tmps & 3 )
+				printf("read_from_tmp: ended unaligned at %p\n", (void *)tmps);
 #endif
-			tmp_next = (struct tmp_struct *)tmps;
+			tmp_next = (TmpStruct_t *)tmps;
 			return (rtmp.tf_type);
 		}
 		else
@@ -665,18 +686,18 @@ int read_from_tmp(void)
 			case TMP_TEST:
 			case TMP_ORG:
 				{
-					tmp_expr.len = expr_stack_ptr = tmp_ptr->tf_length;
-					tmp_expr.ptr = (struct expr_token *)ts;
-					tmps += expr_stack_ptr * sizeof(struct expr_token);
-					tmp_next = (struct tmp_struct *)tmps;
+					tmp_expr.len = expr_stack_ptr = tmp_ptr->tfLength;
+					tmp_expr.ptr = (EXPR_token *)ts;
+					tmps += expr_stack_ptr * sizeof(EXPR_token);
+					tmp_next = (TmpStruct_t *)tmps;
 					break;
 				}
 			case TMP_BSTNG:
 			case TMP_ASTNG:
 				{
-					tmps += tmp_ptr->tf_length;
+					tmps += tmp_ptr->tfLength;
 					tmps += ALIGN(tmps);
-					tmp_next = (struct tmp_struct *)tmps;
+					tmp_next = (TmpStruct_t *)tmps;
 					break;
 				}               /* -- case */
 			case TMP_EOF:
@@ -725,12 +746,12 @@ static void rewind_tmp(void)
 	return;
 }
 
-static unsigned long pass2_pc = 0;
+static uint32_t pass2_pc = 0;
 
 static void disp_offset(void)
 {
 	char *s1, *s2;
-	if ( options->octal )
+	if ( qual_tbl[QUAL_OCTAL].present )
 	{
 		s1 = "\t%06lo (%06lo bytes offset from segment {%s} of file %s)\n";
 		s2 = "\tat location %010lo\n";
@@ -756,7 +777,7 @@ static void disp_offset(void)
 /**********************************************************************
  * Display truncation error
  */
-static void trunc_err(long lowLimit, long highLimit, long written)
+static void trunc_err(int32_t lowLimit, int32_t highLimit, int32_t written)
 /* 
  * At entry:
  *	mask - mask to compare against
@@ -773,7 +794,7 @@ static void trunc_err(long lowLimit, long highLimit, long written)
 	}
 	else
 		sign = "";
-	if ( options->octal )
+	if ( qual_tbl[QUAL_OCTAL].present )
 		s1 = "Truncation at location %lo. Expected %s%lo < %lo < %lo. Written: %lo";
 	else
 		s1 = "Truncation at location %0lX. Expected %s%lX < %0lX < %0lX. Written: %0lX";
@@ -783,7 +804,7 @@ static void trunc_err(long lowLimit, long highLimit, long written)
 	return;
 }
 
-long xfer_addr = 1;
+int32_t xfer_addr = 1;
 FN_struct *xfer_fnd;
 static int noout_flag;
 
@@ -799,11 +820,11 @@ int pass2(void)
  */
 {
 	int i, r_flg = 1, flip;
-	long lc;
+	int32_t lc;
 #if (0)
 	char *src,*dst,c;
 #endif
-	unsigned char *ubp;
+	uint8_t *ubp;
 
 	if ( (outxabs_fp = abs_fp) == 0 )
 		return (1); /* no output required */
@@ -824,8 +845,8 @@ int pass2(void)
 					int ferr;
 					if ( (ferr = MEM_free(tmp_top)) )
 					{ /* give back the memory */
-						sprintf(emsg, "Error (%08X) free'ing %d bytes at %08lX from tmp_pool",
-								ferr, MAX_TOKEN * 8, (unsigned long)tmp_top);
+						sprintf(emsg, "Error (%08X) free'ing %d bytes at %p from tmp_pool",
+								ferr, MAX_TOKEN * 8, (void *)tmp_top);
 						err_msg(MSG_WARN, emsg);
 					}
 					tmp_top = 0;
@@ -856,7 +877,7 @@ int pass2(void)
 				}
 				while ( 1 )
 				{
-					tmlen = tmp_ptr->tf_length;
+					tmlen = tmp_ptr->tfLength;
 					tmsg = (char *)MEM_alloc(tmlen + 1);
 					strncpy(tmsg, (char *)tmp_pool, tmlen);
 					*(tmsg + tmlen) = 0;   /* null terminate the string */
@@ -875,9 +896,9 @@ int pass2(void)
 					}
 					else
 					{
-						if ( options->rel )
+						if ( qual_tbl[QUAL_REL].present )
 						{
-							outtstexp(tmp_ptr->tf_type, (char *)tmp_pool, (int)tmp_ptr->tf_length, &tmp_expr);
+							outtstexp(tmp_ptr->tf_type, (char *)tmp_pool, (int)tmp_ptr->tfLength, &tmp_expr);
 							MEM_free(tmsg);
 							break;
 						}
@@ -929,17 +950,17 @@ int pass2(void)
 				i = 4;      /* assume type l (LONG, low byte first) */
 				if ( tmp_ptr->tf_type == TMP_TAG )
 				{
-					unsigned char mea_buf[4];   /* for endian-agnostic output */
-					if ( (lc = tmp_ptr->tf_length) == 0 )
+					uint8_t mea_buf[4];   /* for endian-agnostic output */
+					if ( (lc = tmp_ptr->tfLength) == 0 )
 						lc = 1; /* get the count */
 					flip = 0;        /* assume not to flip it */
-					if ( options->rel )
+					if ( qual_tbl[QUAL_REL].present )
 					{
 						if ( tmp_expr.len != 1 || lc != 1
 							 || tmp_expr.ptr->expr_code != EXPR_VALUE )
 						{
 							flushobj();    /* flush the object file */
-							if ( options->vldadef )
+							if ( qual_tbl[QUAL_VLDA].present )
 							{
 								union vexp ve;
 								ve.vexp_chp = eline;
@@ -960,7 +981,7 @@ int pass2(void)
 					case 'j':
 						{       /* long, high byte of low word first */
 #if (0)
-							unsigned char b0,b1,b2,b3; /* bytes in long */
+							uint8_t b0,b1,b2,b3; /* bytes in long */
 							b0 = token_value&0xFF; /* pickup individual bytes */
 							b1 = (token_value>>8)&0xFF;
 							b2 = (token_value>>16)&0xFF;
@@ -978,7 +999,7 @@ int pass2(void)
 					case 'J':
 						{       /* long, low byte of high word first */
 #if (0)
-							unsigned char b0,b1,b2,b3; /* bytes in long */
+							uint8_t b0,b1,b2,b3; /* bytes in long */
 							b0 = token_value&0xFF; /* pickup individual bytes */
 							b1 = (token_value>>8)&0xFF;
 							b2 = (token_value>>16)&0xFF;
@@ -1057,14 +1078,14 @@ int pass2(void)
 								const char *s1;
 								if ( !token_value )
 								{
-									if ( options->octal )
+									if ( qual_tbl[QUAL_OCTAL].present )
 										s1 = "Illegal branch offset of %lo at location %lo. Replaced with -2";
 									else
 										s1 = "Illegal branch offset of %lX at location 0x%X. Replaced with -2";
 								}
 								else
 								{
-									if ( options->octal )
+									if ( qual_tbl[QUAL_OCTAL].present )
 										s1 = "Illegal odd branch offset of %lo at location %lo. Replaced with -2";
 									else
 										s1 = "Illegal odd branch offset of 0x%lX at location 0x%X. Replaced with -2";
@@ -1116,7 +1137,7 @@ int pass2(void)
 					while ( lc-- > 0 )
 					{
 #if (0)
-						outbstr((unsigned char *)&token_value,i); /* write the text */
+						outbstr((uint8_t *)&token_value,i); /* write the text */
 #else
 						outbstr(ubp, i); /* write the text */
 #endif
@@ -1125,7 +1146,7 @@ int pass2(void)
 				else
 				{
 					r_flg = 0;       /* don't read next time */
-					if ( options->rel )
+					if ( qual_tbl[QUAL_REL].present )
 					{
 						outexp(&tmp_expr, eline, 0, 0l, eline, abs_fp);
 					}
@@ -1136,8 +1157,8 @@ int pass2(void)
 		case TMP_ASTNG:
 			{
 				if ( noout_flag == 0 )
-					outbstr((unsigned char *)tmp_pool, (int)tmp_ptr->tf_length);
-				pass2_pc += tmp_ptr->tf_length;
+					outbstr((uint8_t *)tmp_pool, (int)tmp_ptr->tfLength);
+				pass2_pc += tmp_ptr->tfLength;
 				break;
 			}
 		case TMP_ORG:
@@ -1147,14 +1168,14 @@ int pass2(void)
 				noout_flag = 0;
 				if ( !evaluate_expression(&tmp_expr) )
 				{
-					if ( options->octal )
+					if ( qual_tbl[QUAL_OCTAL].present )
 					{
-						sprintf(emsg, "ORG may be incorrectly set to %010lo\n",
+						sprintf(emsg, "ORG may be incorrectly set to %010o\n",
 								token_value);
 					}
 					else
 					{
-						sprintf(emsg, "ORG may be incorrectly set to %08lX\n",
+						sprintf(emsg, "ORG may be incorrectly set to %08X\n",
 								token_value);
 					}
 					err_msg(MSG_CONT, emsg);
@@ -1179,19 +1200,19 @@ int pass2(void)
 			{
 				if ( !evaluate_expression(&tmp_expr) )
 				{
-					if ( options->octal )
+					if ( qual_tbl[QUAL_OCTAL].present )
 					{
-						sprintf(emsg, "XFER addr may be incorrectly set to %010lo\n",
+						sprintf(emsg, "XFER addr may be incorrectly set to %010o\n",
 								token_value);
 					}
 					else
 					{
-						sprintf(emsg, "XFER addr may be incorrectly set to %08lX\n",
+						sprintf(emsg, "XFER addr may be incorrectly set to %08X\n",
 								token_value);
 					}
 					err_msg(MSG_CONT, emsg);
 				}
-				if ( options->rel )
+				if ( qual_tbl[QUAL_REL].present )
 				{
 					outxfer(&tmp_expr, abs_fp);
 				}

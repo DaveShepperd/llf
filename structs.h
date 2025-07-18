@@ -19,46 +19,16 @@
 #ifndef _STRUCTS_H_
 #define _STRUCTS_H_ 1
 
+#include <time.h>
 #include "add_defs.h"
 
 #define EOL -2			/* end of line */
 
-typedef struct cli_options {
-   unsigned char cross;		/* /CROSS reference required */
-   unsigned char full;		/* /FULL map spec required */
-   unsigned char rel;		/* signal writing a relative output */
-   unsigned char objdef;	/* default input type is .OBJ */
-   unsigned char vldadef;	/* output format is to be vlda */
-   unsigned char octal;		/* map to be displayed in octal */
-   unsigned char err;		/* report all errors (for rel mode) */
-   unsigned char debug;		/* debug mode */
-   unsigned char option;	/* option switch input */
-   unsigned char library;	/* library switch input */
-   unsigned char miser;		/* miser mode */
-   unsigned char quiet;		/* quiet the warnings about multiple definitions */
-} CLI_options;
-
-#if !defined(offsetof)
-#define offsetof(s, m)    ((int)(&(((s *)0)->m)))
-#endif
-
-#define QUAL_CROSS offsetof(CLI_options, cross)
-#define QUAL_FULL  offsetof(CLI_options, full)
-#define QUAL_REL   offsetof(CLI_options, rel)
-#define QUAL_OBJ   offsetof(CLI_options, objdef)
-#define QUAL_VLDA  offsetof(CLI_options, vldadef)
-#define QUAL_OCTAL offsetof(CLI_options, octal)
-#define QUAL_ERR   offsetof(CLI_options, err)
-#define QUAL_DEB   offsetof(CLI_options, debug)
-#define QUAL_OPT   offsetof(CLI_options, option)
-#define QUAL_LIB   offsetof(CLI_options, library)
-#define QUAL_MISER offsetof(CLI_options, miser)
-#define QUAL_QUIET offsetof(CLI_options, quiet)
-
-extern CLI_options *options;	/* declare command options */
+#define QUALTBL_GET_ENUM 1
+#include "qualtbl.h"
 
 typedef struct my_desc {	/* define a descriptor structure cuz	*/
-   unsigned short md_len;	/* the stock descrip definitions cause	*/
+   uint16_t md_len;	/* the stock descrip definitions cause	*/
 #ifdef VMS
    char md_type;		/* the compiler to think that they are	*/
    char md_class;		/* floating point data types.		*/
@@ -82,15 +52,15 @@ typedef struct dbg_seclist {
 
 typedef struct fn_struct {
 #ifdef VMS
-   unsigned short d_length;	/* length of s_buff			*/
+   uint16_t d_length;	/* length of s_buff			*/
    char s_type;			/* descriptor constant (uses 0)		*/
    char s_class;		/* descriptor constant (uses 0)		*/
 #endif
    char *fn_buff;		/* pointer to filename buffer		*/
-   unsigned short r_length;	/* length of string stored in s_buff	*/
+   uint16_t r_length;	/* length of string stored in s_buff	*/
    char *fn_name_only;		/* filename without dvc/dir/ver stuff	*/
-   long fn_min_id;		/* smallest identifier found in file	*/
-   long fn_max_id;		/* largest identifier found in file	*/
+   int32_t fn_min_id;		/* smallest identifier found in file	*/
+   int32_t fn_max_id;		/* largest identifier found in file	*/
    struct fn_struct *fn_next;	/* pointer to next filename desc	*/
    FILE *fn_file;		/* pointer to FILE structure		*/
    FILE_name *fn_nam;		/* pointer to file_name structure 	*/
@@ -126,17 +96,17 @@ extern FN_struct *library( void );
 extern FN_struct *inp_files,*option_file;
 
 typedef struct df_struct {
-   unsigned char df_len;
+   uint8_t df_len;
    struct ss_struct *df_ptr;
 } DF_struct;
 
 typedef struct seg_spec_struct {
-   unsigned short seg_salign;	/* alignment of group/segment in memory */
-   unsigned short seg_dalign;	/* alignment of data within segment */
-   unsigned long seg_base;	/* group/segment base */
-   unsigned long seg_len;	/* length of group/segment */
-   unsigned long seg_maxlen;	/* maximum length for the group */
-   unsigned long seg_offset;	/* output offset to apply to segment */
+   uint16_t seg_salign;	/* alignment of group/segment in memory */
+   uint16_t seg_dalign;	/* alignment of data within segment */
+   uint32_t seg_base;	/* group/segment base */
+   uint32_t seg_len;	/* length of group/segment */
+   uint32_t seg_maxlen;	/* maximum length for the group */
+   uint32_t seg_offset;	/* output offset to apply to segment */
    struct ss_struct *seg_reloffset; /* output is placed in this segment */
    struct ss_struct *seg_group; /* pointer to group owning this segment */
    struct ss_struct *seg_first;	/* pointer to first segment in cluster */
@@ -168,8 +138,8 @@ typedef struct ss_struct {
    unsigned  flg_stb:1;		/* symbol defined by an .STB file */
    unsigned  flg_noout:1;	/* don't output this segment */
    unsigned  flg_nosym:1;	/* don't output this symbol to .SYM file */
-   unsigned short ss_strlen;	/* symbol name string length (also sym ID) */
-   long ss_value;		/* symbol value */
+   uint16_t ss_strlen;	/* symbol name string length (also sym ID) */
+   int32_t ss_value;		/* symbol value */
    char *ss_string;		/* pointer to ASCII identifier name */
    struct ss_struct *ss_next; 	/* pointer to next node */
    struct ss_struct **ss_prev;	/* pointer to previous structs next ptr */
@@ -183,7 +153,7 @@ typedef struct ss_struct {
 
 extern SS_struct **id_table;  /* pointer to id_table */
 extern SS_struct *first_symbol; /* pointer to first if duplicates */
-extern short new_symbol;		/* symbol insertion flag */
+extern int16_t new_symbol;		/* symbol insertion flag */
    				/* value (additive) */
    				/*   1 - symbol added to symbol table */
    				/*   2 - symbol added to hash table */
@@ -194,26 +164,26 @@ extern SS_struct *hash[]; /* hash table is array of pointers */
 extern SS_struct *base_page_nam;
 extern SS_struct *abs_group_nam;
 extern SS_struct *last_seg_ref;
-extern SS_struct *sym_lookup( char *strng, long strlen, int err_flag);
+extern SS_struct *sym_lookup( char *strng, int32_t strlen, int err_flag);
 extern SS_struct *sym_delete( SS_struct *old_ptr );
 extern int write_to_symdef( SS_struct *ptr );
 extern void do_xref_symbol( SS_struct *sym_ptr, unsigned int def);
-extern void insert_id( long id, SS_struct *id_ptr);
+extern void insert_id( int32_t id, SS_struct *id_ptr);
 extern SEG_spec_struct *get_seg_spec_mem( SS_struct *sym_ptr);
 extern SS_struct *get_symbol_block( int flag );
 extern SS_struct **find_seg_in_group(SS_struct *, SS_struct **);
 extern int chk_mdf(int flag, SS_struct *sym_ptr, int quietly);
-extern void outseg_def(SS_struct *sym_ptr, unsigned long len, int based );
+extern void outseg_def(SS_struct *sym_ptr, uint32_t len, int based );
 
 typedef struct grp_struct {
    struct ss_struct **grp_top;	/* top of group list */
    struct ss_struct **grp_next;	/* next free entry */
-   long grp_free;		/* number of free entries left */
+   int32_t grp_free;		/* number of free entries left */
 } GRP_struct;
 
 extern int add_to_group( SS_struct *sym_ptr, SS_struct *grp_nam,GRP_struct *grp_ptr);
 extern void insert_intogroup( GRP_struct *grp_ptr, SS_struct *sym_ptr, SS_struct *grp_nam );
-extern GRP_struct *get_grp_ptr( SS_struct *grp_nam, long align, long maxlen );
+extern GRP_struct *get_grp_ptr( SS_struct *grp_nam, int32_t align, int32_t maxlen );
 
 typedef struct ofn_struct {
    struct fn_struct ofn[OUT_FN_MAX];
@@ -221,32 +191,29 @@ typedef struct ofn_struct {
 
 extern OFN_struct *out_files;
 
-typedef union token_union {
-   char *s_ptr;
-   long *i_ptr;
-} TOKEN_union;
-
 typedef struct token_struct {
    char token_type;
-   union token_union token_;
+   char *s_ptr;
+   int32_t *i_ptr;
 } TOKEN_struct;
 
 typedef struct expr_token {
-   unsigned char expr_code;	/* expression code */
-   long expr_value;		/* value */
-   struct ss_struct *expr_ptr;	/* pointer to term's symbol/seg */
+   uint8_t expr_code;	/* expression code */
+   int32_t expr_value;		/* value */
+   uint32_t ss_id;			/* symbol's ID */
+   SS_struct *ss_ptr;	/* pointer to term's symbol/seg */
 } EXPR_token;
 
 typedef struct exp_stk {
    int len;
-   struct expr_token *ptr;
+   EXPR_token *ptr;
 } EXP_stk;
 
-extern int evaluate_expression(struct exp_stk *eptr);
+extern int evaluate_expression(EXP_stk *eptr);
 
 typedef struct rm_struct {	/* reserved memory list */
-   unsigned long rm_start;	/* start address */
-   unsigned long rm_len;	/* length of area to exclude */
+   uint32_t rm_start;	/* start address */
+   uint32_t rm_len;	/* length of area to exclude */
    struct rm_struct *rm_next;	/* pointer to next element */
 } RM_struct;
 
@@ -254,7 +221,7 @@ typedef struct rm_control {
    RM_struct **list;		/* pointer to array of pointers to arrays of RM_struct's */
    RM_struct *next;		/* next element to use */
    RM_struct *top;		/* first element in the whole chain */
-   unsigned long pool_used;	/* total memory used */
+   uint32_t pool_used;	/* total memory used */
    int used;			/* number of entries used in the array */
    int size;			/* number of entries avaiable in array */
    int free;			/* number of free elements in the array */
@@ -266,9 +233,9 @@ extern void free_rm_mem(RM_control **rmcp);
 
 extern int token_pool_size;
 extern char *token_pool;
-extern long token_value;
+extern int32_t token_value;
 extern int lc_pass;            /* pass count through lc() */
-extern long unix_time;
+extern time_t unix_time;
 extern int inp_str_size;
 extern int option_input;	/* option file processing flag */
 extern int debug;		/* debug options */
@@ -277,12 +244,12 @@ extern int fn_pool_size;	/* size remaining in filename buffer */
 extern GRP_struct *base_page_grp;
 extern GRP_struct *abs_group;
 extern char *null_string;
-extern long misc_pool_used;
-extern long sym_pool_used;
+extern int32_t misc_pool_used;
+extern int32_t sym_pool_used;
 extern FILE *outxabs_fp;
 extern int outx_lineno,outx_width,outx_debug;
 extern char *eline;
-extern long misc_pool_used;
+extern int32_t misc_pool_used;
 
 extern struct grp_struct *group_list_top;  /* pointer to top of group list */
 extern struct grp_struct *group_list_next; /* pointer to next free space */
@@ -295,8 +262,8 @@ extern int get_c( void );
 extern int get_text( void );
 extern struct fn_struct **get_xref_pool( void );
 
-extern char *err2str( int num );
-extern void write_to_tmp( int typ, long itm_cnt, char *itm_ptr, int itm_siz );
+extern const char *err2str( int num );
+extern void write_to_tmp( int typ, int32_t itm_cnt, char *itm_ptr, int itm_siz );
 extern int exprs( int flag );
 
 extern char def_ob[],def_lb[],def_obj[],def_stb[];
@@ -319,13 +286,13 @@ extern void lap_timer( char *str );
 extern int lc( void );
 extern void outx_init( void );
 extern void seg_locate( void );
-extern void termsym( long taddr );
+extern void termsym( int32_t taddr );
 extern void flushsym( int mode );
 extern int out_dbgod( int mode, FILE *absfp, FN_struct *fnp );
 extern void symbol_definitions( void );
 extern void flushobj( void );
 extern void sort_symbols( void );
-extern int getcommand( void );
+extern int getcommand( int iArgc, char *iArgv[] );
 extern int display_help( void );
 #if defined(__GNUC__)
 #if !defined(fileno)
@@ -334,11 +301,11 @@ extern int fileno(FILE *);
 #endif
 
 extern struct fn_struct *get_fn_struct();
-extern void termobj( long traddr );
+extern void termobj( int32_t traddr );
 extern int outtstexp(int typ, char *asc, int alen, EXP_stk *exp);
-extern char *outexp(EXP_stk *eptr, char *s, int tag, long tlen, char *wrt, FILE *fp);
-extern void outbstr( unsigned char *from, int len );
-extern void outorg( unsigned long address, EXP_stk *exp_ptr );
+extern char *outexp(EXP_stk *eptr, char *s, int tag, int32_t tlen, char *wrt, FILE *fp);
+extern void outbstr( uint8_t *from, int len );
+extern void outorg( uint32_t address, EXP_stk *exp_ptr );
 extern char *outxfer( EXP_stk *exp, FILE *fp );
 extern void outsym_def(SS_struct *sym_ptr, int mode );
 
