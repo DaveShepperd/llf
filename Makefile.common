@@ -43,8 +43,8 @@ ifeq ($(MSYS2),1)
 	EXE = .exe
 endif
 
-WARN = -std=c99 -Wall -ansi -pedantic -Wno-char-subscripts
-CFLAGS = $(OPT) $(DBG) $(WARN) $(DEFINES) $(HOST_MACH) $(INCS)
+WARN = -Wall -ansi -pedantic -Wno-char-subscripts
+CFLAGS = $(OPT) $(DBG) $(WARN) $(DEFINES) $(HOST_MACH) $(INCS) $(EXTRA_CHKS)
 
 C = $(CC) -c $(CFLAGS)
 D = $(CC) -c $(CFLAGS)

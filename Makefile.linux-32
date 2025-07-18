@@ -8,7 +8,7 @@ LINUX = 1
 MSYS2 = 0
 MINGW = 0
 EXTRA_DEFINES = -DM_UNIX 
-EXTRA_CHKS =
+EXTRA_CHKS = #-std=c99
 DBG = #-g
 OPT = -O2
 CC = gcc

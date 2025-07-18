@@ -573,6 +573,8 @@ int getcommand(int iArgc, char *iArgv[])
 	if ( gc_err )
 		return FALSE;        /* don't do anything if option errors */
 	qual_tbl[QUAL_VLDA].present |= qual_tbl[QUAL_BINARY].present;
+	if ( qual_tbl[QUAL_VLDA].negated || qual_tbl[QUAL_BINARY].negated )
+		qual_tbl[QUAL_VLDA].present = 0;
 	if ( qual_tbl[QUAL_DEB].present )
 	{
 		if ( (debug = qual_tbl[QUAL_DEB].valueInt) == 0 )
