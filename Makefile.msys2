@@ -1,7 +1,7 @@
 # This is for an MSYS2 on Windows build
 # For now, llf has to be built to run in 32 bit mode.
 
-HOST_MACH = -m32
+HOST_MACH =
 DELIM = '
 PiOS32 = 0
 LINUX = 1
