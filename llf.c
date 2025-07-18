@@ -186,7 +186,7 @@ int main( int argc, char *argv[] )
     inp_str_size = MAX_TOKEN*8;
     map_subtitle = MEM_alloc(80);
     if (map_subtitle == (char *)0) EXIT_FALSE;
-    strcpy(map_subtitle,"LLF Version \001");
+    snprintf(map_subtitle,80-1,"LLF Version (" FMT_SZ " bit) \001", sizeof(void *)*8);
     unix_time = time(NULL); /* get ticks since 1970 */
     our_time = localtime(&unix_time);    /* get current time of year */
     snprintf(ascii_date,sizeof(ascii_date),"\"%s %02d %4d %02d:%02d:%02d\"",
