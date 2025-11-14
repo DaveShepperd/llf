@@ -136,8 +136,6 @@ static void rewind_sym( void )
 
 static int err_cnt;
 
-int dump_expr( struct exp_stk *exp );
-
 /********************************************************************
  * Evaluate expression.
  */
@@ -164,6 +162,7 @@ int ev_exp( struct exp_stk *eptr )
             tos->expr_code = ctos->expr_code;
             tos->expr_value = ctos->expr_value;
 			tos->ss_ptr = ctos->ss_ptr;
+			tos->ss_id = ctos->ss_id;
         }
         switch (tos->expr_code)
         {
@@ -795,14 +794,46 @@ void symbol_definitions( void )
     }                /* -- while	*/
 }               /* -- sym_def	*/
 
-int dump_expr( EXP_stk *exp )
+static void show_symbol(const EXPR_token *ex, const SS_struct *sym_ptr)
+{
+	if (sym_ptr != 0 && sym_ptr->ss_string != 0)
+	{
+		printf("\tEXPR_SYM. Ptr %p, Value %d. Points to symbol %s\n",
+			   (void *)sym_ptr, ex->expr_value, sym_ptr->ss_string);
+		if (sym_ptr->flg_segment)
+			printf("\t\tIs a segment.\n");
+		if (sym_ptr->flg_defined)
+		{
+			if (sym_ptr->flg_exprs)
+			{
+				printf("\t\tSymbol is defined via an expression:\n****\n");
+				dump_expr(NULL, sym_ptr->ss_exprs);
+				printf("****\n");
+			}
+			else
+			{
+				printf("\t\tSymbol is defined with value of: %d\n",
+					   sym_ptr->ss_value);
+			}
+		}
+	}
+	else
+	{
+		printf("\tEXPR_SYM: expr=%p. \"%s\"=%d. NON-EXISTANT SYMBOL\n",
+			   (void *)sym_ptr, sym_ptr ? sym_ptr->ss_string : NULL, ex->expr_value);
+	}
+}
+
+void dump_expr( const char *title, EXP_stk *exp )
 {
     int len;
     EXPR_token *ex;
     SS_struct *sym_ptr;
     len = exp->len;
     ex = exp->ptr;
-    printf("Expression stack with %d terms\n",exp->len);
+	if ( title )
+		printf("%s: ", title);
+	printf("Expression stack with %d terms\n", exp->len);
     for (;len > 0;++ex,--len)
     {
         switch (ex->expr_code)
@@ -813,6 +844,7 @@ int dump_expr( EXP_stk *exp )
 			{
 				printf("\tEXPR_IDENT %d. Value %d. Points to symbol %s\n",
 					   ex->ss_id,ex->expr_value,sym_ptr->ss_string);
+				show_symbol(ex, sym_ptr);
 			}
 			else
 			{
@@ -822,32 +854,7 @@ int dump_expr( EXP_stk *exp )
 			continue;
         case EXPR_SYM:
 			sym_ptr = ex->ss_ptr; /* ex->expr_ptr; */     /* get pointer to symbol */
-			if (sym_ptr != 0 && sym_ptr->ss_string != 0)
-			{
-				printf("\tEXPR_SYM. Ptr %p, Value %d. Points to symbol %s\n",
-					   (void *)sym_ptr, ex->expr_value, sym_ptr->ss_string);
-				if (sym_ptr->flg_segment)
-					printf("\t\tIs a segment.\n");
-				if (sym_ptr->flg_defined)
-				{
-					if (sym_ptr->flg_exprs)
-					{
-						printf("\t\tSymbol is defined via an expression:\n****\n");
-						dump_expr(sym_ptr->ss_exprs);
-						printf("****\n");
-					}
-					else
-					{
-						printf("\t\tSymbol is defined with value of: %d\n",
-							   sym_ptr->ss_value);
-					}
-				}
-			}
-			else
-			{
-				printf("\tEXPR_SYM: expr=%p. \"%s\"=%d. NON-EXISTANT SYMBOL\n",
-					   (void *)sym_ptr, sym_ptr ? sym_ptr->ss_string : NULL, ex->expr_value);
-			}
+			show_symbol(ex, sym_ptr);
 			continue;
         case EXPR_VALUE:
 			printf("\tEXPR_VALUE. Value %d\n",ex->expr_value);
@@ -888,6 +895,5 @@ int dump_expr( EXP_stk *exp )
 			continue;
         }             /* -- switch on expr_type  */
     }                /* -- for all expr items   */
-    return TRUE;         /* and success */
 }
 

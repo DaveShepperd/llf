@@ -106,5 +106,4 @@ extern int map_line;        /* lines remaining on map page */
 extern int32_t record_count;    /* total records input */
 extern int32_t object_count;    /* total records input */
 
-
 #endif /* _HEADER_H_ */

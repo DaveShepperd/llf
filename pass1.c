@@ -1677,6 +1677,7 @@ int exprs( int flag)
                 {       /* relational? */
                     exp->expr_value |= *inp_ptr++ << 8;
                 }
+#if 0
                 if (tok == '+' || tok == '-')
                 { /* special case? */
                     int t=0;
@@ -1699,26 +1700,6 @@ int exprs( int flag)
                         }
                         tos->expr_value = 0;
                     }
-#if 0
-                    else if (t == 6)
-                    { /* sos is VALUE, tos is IDENT */
-                        sos->expr_ptr = tos->expr_ptr;
-                        sos->expr_code = EXPR_IDENT;
-                        if (tok == '+')
-                        {
-                            sos->expr_value += tos->expr_value;
-                            --expr_stack_ptr;
-                            exp = tos;
-                        }
-                        else
-                        {
-                            sos->expr_value = tos->expr_value - sos->expr_value;
-                            tos->expr_code = EXPR_OPER;
-                            tos->expr_value = EXPROPER_NEG;
-                        }
-                        break;
-                    }
-#endif
                     else if (t == 9 ||     /* sos is IDENT, tos is VALUE */
                              t == 5)
                     {     /* sos is VALUE, tos is VALUE */
@@ -1735,6 +1716,7 @@ int exprs( int flag)
                         break;
                     }
                 }
+#endif
                 ++exp;
                 ++expr_stack_ptr;
                 break;
@@ -1913,6 +1895,14 @@ void pass1( void )
         case TOKEN_const: {
                 if (exprs(1) > 0)
                 {
+#if 0
+					{
+						EXP_stk tmpExp;
+						tmpExp.len = expr_stack_ptr;
+						tmpExp.ptr = expr_stack;
+						dump_expr("After exprs()", &tmpExp);
+					}
+#endif
                     write_to_tmp(TMP_EXPR,expr_stack_ptr,
                                  (char *)expr_stack,sizeof(struct expr_token));
                     if (token_type != TOKEN_expr_tag)

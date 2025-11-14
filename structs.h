@@ -210,6 +210,7 @@ typedef struct exp_stk {
 } EXP_stk;
 
 extern int evaluate_expression(EXP_stk *eptr);
+extern void dump_expr(const char *title, EXP_stk *exp);
 
 typedef struct rm_struct {	/* reserved memory list */
    uint32_t rm_start;	/* start address */

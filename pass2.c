@@ -557,6 +557,17 @@ void write_to_tmp(int typ, int32_t itm_cnt, char *itm_ptr, int itm_siz)
 			dst.t = tmp.t + 1;
 			src.c = itm_ptr;
 			memcpy(dst.c, src.c, itz);
+#if 0
+			if ( typ == TMP_EXPR )
+			{
+				EXP_stk tmpExp;
+				tmpExp.len = itm_cnt;
+				tmpExp.ptr = (EXPR_token *)itm_ptr;
+				dump_expr("write_to_tmp before", &tmpExp);
+				tmpExp.ptr = (EXPR_token *)dst.c;
+				dump_expr("write_to_tmp after", &tmpExp);
+			}
+#endif
 			dst.c += itz;
 		}
 		else
@@ -679,8 +690,8 @@ int read_from_tmp(void)
 					++tmp_next;
 					break;
 				}
-			case TMP_START:
 			case TMP_EXPR:
+			case TMP_START:
 			case TMP_OOR:
 			case TMP_BOFF:
 			case TMP_TEST:
@@ -936,6 +947,7 @@ int pass2(void)
 			}
 		case TMP_EXPR:
 			{
+/*				dump_expr("read_from_tmp", &tmp_expr); */
 				if ( noout_flag == 0 )
 				{
 					if ( !evaluate_expression(&tmp_expr) )
