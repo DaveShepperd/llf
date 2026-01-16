@@ -1417,7 +1417,8 @@ void object( int fd )
                         seg_ptr->sflg_data = (vseg->vseg_flags&VSEG_DATA) != 0;
                         seg_ptr->sflg_noref = (vseg->vseg_flags&VSEG_REFERENCE) == 0;
                         seg_ptr->sflg_literal = (vseg->vseg_flags&VSEG_LITERAL) == 0;
-                        if (!(new_symbol & 4) &&  /* if not a duplicate symbol */
+						haveLiteralPool |= seg_ptr->sflg_literal;
+						if (!(new_symbol & 4) &&  /* if not a duplicate symbol */
                             !sym_ptr->flg_member)
                         { /* and not already a group member */
                             if (sym_ptr->flg_abs)
@@ -1693,7 +1694,7 @@ void object( int fd )
             case VLDA_TEST: {   /* test expression */
                     char *strng;
                     int ii;
-                    static int tmp_opr[3] = {TMP_TEST, TMP_BOFF, TMP_OOR};
+                    static const int tmp_opr[3] = {TMP_TEST, TMP_BOFF, TMP_OOR};
                     vlda_inp = 1;
                     strng = (char *)vtst;
                     inp_vldaexp(strng+vtst->vtest_eoff);

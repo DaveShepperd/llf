@@ -946,6 +946,7 @@ void outseg_def(SS_struct *sym_ptr, uint32_t len, int based )
             if (seg_ptr->sflg_data) *s++ = 'd';
             if (sym_ptr->flg_noout) *s++ = 'o';
             if (seg_ptr->sflg_ro)  *s++ = 'r';
+			if (seg_ptr->sflg_literal) *s++ = 'l';
             if (seg_ptr->sflg_noref) *s++ = 'u';
             if (seg_ptr->seg_group == base_page_nam)
             { /* if in BSECT group */
@@ -974,6 +975,7 @@ void outseg_def(SS_struct *sym_ptr, uint32_t len, int based )
             if (sym_ptr->flg_noout) flg |= VSEG_NOOUT; /* if no output */
             if (seg_ptr->sflg_data) flg |= VSEG_DATA; /* segment is data/code */
             if (seg_ptr->sflg_ro) flg |= VSEG_RO; /* segment is read only */
+			if (seg_ptr->sflg_literal) flg |= VSEG_LITERAL; /* segment is literal pool */
             if (!seg_ptr->sflg_noref) flg |= VSEG_REFERENCE; /* segment is referenced */
             if (seg_ptr->seg_group == base_page_nam)
             { /* if in BSECT group */

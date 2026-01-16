@@ -499,6 +499,11 @@ void write_to_tmp(int typ, int32_t itm_cnt, char *itm_ptr, int itm_siz)
 	} src,dst,tmp;       /* mem pointers */
 	int itz;
 
+#if 0
+	printf("write_to_tmp(): typ=0x%X(%d), itm_cnt=%d, itm_ptr='%s', itm_siz=%d, OUT_FN_ABS=%s\n",
+/		   typ, typ, itm_cnt, itm_ptr, itm_siz, output_files[OUT_FN_ABS].fn_present ? "Yes":"No");
+#endif
+	
 	if ( !output_files[OUT_FN_ABS].fn_present )
 		return; /* nuthin' to do if no ABS wanted */
 	if ( tmp_pool_size == 0 )
@@ -886,40 +891,37 @@ int pass2(void)
 					r_flg = 0;
 					break;
 				}
-				while ( 1 )
+				do
 				{
 					tmlen = tmp_ptr->tfLength;
 					tmsg = (char *)MEM_alloc(tmlen + 1);
 					strncpy(tmsg, (char *)tmp_pool, tmlen);
 					*(tmsg + tmlen) = 0;   /* null terminate the string */
 					condit = evaluate_expression(&tmp_expr);
-					if ( !condit )
+					if ( condit )
 					{
-						sprintf(emsg, "Invalid expression in .%s: %s", cmd_type, tmsg);
-						err_msg(MSG_ERROR, emsg);
-						MEM_free(tmsg);
-						break;
-					}
-					condit = 1;          /* assume true */
-					if ( tmp_expr.len == 1 && tmp_expr.ptr->expr_code == EXPR_VALUE )
-					{
-						condit = tmp_expr.ptr->expr_value;
-					}
-					else
-					{
-						if ( qual_tbl[QUAL_REL].present )
+						if ( tmp_expr.len == 1 && tmp_expr.ptr->expr_code == EXPR_VALUE )
 						{
-							outtstexp(tmp_ptr->tf_type, (char *)tmp_pool, (int)tmp_ptr->tfLength, &tmp_expr);
-							MEM_free(tmsg);
-							break;
+							condit = tmp_expr.ptr->expr_value;
 						}
 						else
 						{
-							sprintf(emsg, "Expression .%s not absolute: %s", cmd_type, tmsg);
-							err_msg(MSG_ERROR, emsg);
+							if ( qual_tbl[QUAL_REL].present )
+							{
+								outtstexp(savedType /*tmp_ptr->tf_type*/, (char *)tmp_pool, (int)tmp_ptr->tfLength, &tmp_expr);
+								MEM_free(tmsg);
+								break; 	/* exit do {} while(); */
+							}
+							else
+							{
+								sprintf(emsg, "Expression .%s not absolute: %s", cmd_type, tmsg);
+								err_msg(MSG_ERROR, emsg);
+							}
+							condit = 0;
 						}
-						condit = 0;
 					}
+					else
+						condit = 1;
 					if ( condit )
 					{
 						if ( savedType == TMP_TEST )
@@ -941,9 +943,9 @@ int pass2(void)
 						}
 					}
 					MEM_free(tmsg);
-					break;
-				}
-				break;
+					break;	/* exit do {} while(); */
+				} while (0);
+				break;	/* Exit switch */
 			}
 		case TMP_EXPR:
 			{

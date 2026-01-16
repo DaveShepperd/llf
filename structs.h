@@ -138,15 +138,16 @@ typedef struct ss_struct {
    unsigned  flg_stb:1;		/* symbol defined by an .STB file */
    unsigned  flg_noout:1;	/* don't output this segment */
    unsigned  flg_nosym:1;	/* don't output this symbol to .SYM file */
-   uint16_t ss_strlen;	/* symbol name string length (also sym ID) */
+   unsigned  flg_literal:1;	/* This symbol is the fake literalPool symbol */
+   uint16_t ss_strlen;		/* symbol name string length (also sym ID) */
    int32_t ss_value;		/* symbol value */
-   char *ss_string;		/* pointer to ASCII identifier name */
+   char *ss_string;			/* pointer to ASCII identifier name */
    struct ss_struct *ss_next; 	/* pointer to next node */
    struct ss_struct **ss_prev;	/* pointer to previous structs next ptr */
    struct fn_struct *ss_fnd;	/* pointer to fnd of first reference */
    struct fn_struct **ss_xref;	/* pointer to cross reference table */
    struct exp_stk *ss_exprs;	/* pointer to expression definition area */
-   struct seg_spec_struct *seg_spec; /* pointer to segment relevant items */
+   struct seg_spec_struct *seg_spec; /* pointer to segment to which this symbol "belongs" */
 } SS_struct;
 
 #define ss_ident ss_strlen	/* equate strlen to ident */
@@ -163,6 +164,7 @@ extern struct ss_struct *group_list_default; /* pointer to default group name */
 extern SS_struct *hash[]; /* hash table is array of pointers */
 extern SS_struct *base_page_nam;
 extern SS_struct *abs_group_nam;
+extern SS_struct *lit_group_nam;
 extern SS_struct *last_seg_ref;
 extern SS_struct *sym_lookup( char *strng, int32_t strlen, int err_flag);
 extern SS_struct *sym_delete( SS_struct *old_ptr );
@@ -244,6 +246,7 @@ extern char *fn_pool;		/* pointer to filename buffer */
 extern int fn_pool_size;	/* size remaining in filename buffer */
 extern GRP_struct *base_page_grp;
 extern GRP_struct *abs_group;
+extern GRP_struct *lit_group;
 extern char *null_string;
 extern int32_t misc_pool_used;
 extern int32_t sym_pool_used;
@@ -258,7 +261,7 @@ extern struct grp_struct *group_list_next; /* pointer to next free space */
 extern EXPR_token expr_stack[]; /* expression stack */
 extern int expr_stack_ptr;  /* expression stack pointer */
 
-extern void puts_map( char *string, int lines );
+extern void puts_map( const char *string, int lines );
 extern int get_c( void );
 extern int get_text( void );
 extern struct fn_struct **get_xref_pool( void );

@@ -766,6 +766,13 @@ void symbol_definitions( void )
             }
             return;        /* return TRUE */
         }
+#if 0
+		printf("symbol_definitions(): '%s', ss_exprs=%p, exp->len=%d\n",
+			   sym_ptr->ss_string,
+			   (void *)sym_ptr->ss_exprs,
+			   sym_ptr->ss_exprs ? sym_ptr->ss_exprs->len : 0
+			   );
+#endif
         if ((exp=sym_ptr->ss_exprs) != 0 && exp->len != 0)
         {
             if (!evaluate_expression(exp))

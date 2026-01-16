@@ -266,9 +266,6 @@ void seg_locate( void )
     struct seg_spec_struct *seg_ptr,*grpseg_ptr;
     uint32_t base, align=0, seg_len=0, next_base, bottom, top, offset;
     int  f_based, jj, f_fit, f_stable;
-#if 0
-    int  f_reloffset=0;
-#endif
     RM_control *rm_save=0;
 
     for (jj=0; jj < 4; ++jj)
@@ -296,10 +293,6 @@ void seg_locate( void )
 * A group list entry whose value is -1 indicates that the NEXT entry is a
 *    pointer to another array of these pointers (continuation array). 
 *************************************************************************/
-
-#if 0
-        if (jj == 3 && f_reloffset == 0) continue; /* short cut the cleanup */
-#endif
 
         base = 0;         /* start location at 0 */
         grp_ptr = group_list_top; /* start at the list head */
@@ -347,9 +340,6 @@ void seg_locate( void )
             {
                 SS_struct *relof;
                 relof = grp_nam->seg_spec->seg_reloffset;
-#if 0
-                f_reloffset = 1;        /* signal we found a relative segment */
-#endif
                 offset = relof->ss_value-grp_nam->ss_value; /* the offset is the location of this segment */
                 grpseg_ptr->seg_offset = offset;
                 while ((st = *ls++) != 0)

@@ -47,8 +47,9 @@ extern int32_t grp_pool_used;	/* amount of memory used for grps */
 extern int16_t new_ident;		/* new identifier assignment */
 
 extern int32_t group_list_free;		   /* number of free spaces left */
-extern void err_msg();		/* error message routine */
-extern char emsg[];		/* error message buffer */
+extern void err_msg(int severity, const char *msg);		/* error message routine */
+#define EMSG_SIZE (512)
+extern char emsg[EMSG_SIZE];	/* error message buffer */
 extern int error_count[5];
 extern char *commandLine;
 
@@ -105,5 +106,6 @@ extern int32_t peak_mem_used;
 extern int map_line;        /* lines remaining on map page */
 extern int32_t record_count;    /* total records input */
 extern int32_t object_count;    /* total records input */
+extern int haveLiteralPool;
 
 #endif /* _HEADER_H_ */

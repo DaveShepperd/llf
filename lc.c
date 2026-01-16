@@ -57,6 +57,7 @@ static char upc_token[32];  /* local uppercase token */
 static char *tmp_grp_name=0;    /* pointer to temporry group */
 static int tmp_grp_name_size;   /* size of temporary area */
 static int tmp_grp_number;  /* temporary group number */
+static int skipAllDeclare, skipAllLocate, skipAllReserve;
 
 /******************************************************************
  * Display bad string.
@@ -398,16 +399,22 @@ int chk_token(int get_flg, int typ, int value, char *msg)
  *			the C RTL function time() to var.
  */
 
-int lc_declare( void )
+int lc_declare( char **opt )
 {
     int err_typ;
     struct ss_struct *sym_ptr;
-    while (1)
+	if ( !skipAllDeclare && qual_tbl[QUAL_REL].present )
+	{
+		sprintf(emsg,"Declare commands are ignored when -relative mode selected");
+		err_msg(MSG_WARN,emsg);
+		skipAllDeclare = 1;
+	}
+	while ( 1 )
     {
         CHK_TOKEN(1,LC_TOK_STR,0,"Expected symbol name here");
 		if ( (sym_ptr = sym_lookup(token_pool, token_value, 0)) == 0 )
 		{
-			if ( !qual_tbl[QUAL_QUIET].present )
+			if ( !skipAllDeclare && !qual_tbl[QUAL_QUIET].present )
 			{
 				sprintf(emsg,"DECLARED symbol {%s} not present in object code",
 						token_pool);
@@ -415,9 +422,12 @@ int lc_declare( void )
 			}
 		}
         lc_get_token(0,"%LLF- Premature EOF",0);
-        if ((err_typ=chk_token(0,LC_TOK_CHAR,':',"Expected ':' here, assumed")) == EOF) return EOF;
-        if (err_typ == EOL) return EOL;
-        if (err_typ) lc_get_token(0,"%LLF- Premature EOF",0);
+        if ((err_typ=chk_token(0,LC_TOK_CHAR,':',"Expected ':' here, assumed")) == EOF)
+			return EOF;
+        if (err_typ == EOL)
+			return EOL;
+        if (err_typ)
+			lc_get_token(0,"%LLF- Premature EOF",0);
         if (token_type == LC_TOK_STR)
         {
             if (strcmp(upc_token,"TIME") == 0)
@@ -429,7 +439,7 @@ int lc_declare( void )
         {
             CHK_TOKEN(0,LC_TOK_HEX,0,"Expected an absolute number or string TIME here");
         }
-        if (sym_ptr)
+        if ( !skipAllDeclare && sym_ptr )
         {
             if (sym_ptr->flg_segment)
             {
@@ -544,9 +554,9 @@ int check_4_lckeyword(int *state, struct ss_struct *grp_nam)
     return 0;
 }
 
-int lc_locate( void )
+int lc_locate( char **opt )
 {
-    int state=LOCATE_SEG_GRP;
+    int state = skipAllLocate ? LOCATE_EATIT : LOCATE_SEG_GRP;
     int err = 0;
     struct ss_struct *sym_ptr,*grp_nam=0;
     struct grp_struct *grp_ptr=0;
@@ -556,7 +566,14 @@ int lc_locate( void )
     int dalign = 0;
     info_save = info_enable;
     info_enable = 1;
-    while (1)
+	if ( !skipAllLocate && qual_tbl[QUAL_REL].present )
+	{
+		snprintf(emsg,sizeof(emsg)-1,"Locate commands are ignored when -relative mode selected");
+		err_msg(MSG_WARN,emsg);
+		state = LOCATE_EATIT;
+		skipAllLocate = 1;
+	}
+	while ( 1 )
     {
         if (lc_get_token(0,"%LLF- Premature EOF",0) == EOF )
         {
@@ -834,7 +851,7 @@ int lc_locate( void )
 /****************************************************************************
  * RESERVE (address-option ...)
  */
-int lc_reserve( void )
+int lc_reserve( char **opt )
 /*
  * Reserves a memory location or range of locations such that no segments
  * will be placed in the region.
@@ -849,11 +866,18 @@ int lc_reserve( void )
 {
     int state=0,cn=0;
     uint32_t begin=0;
-    while (1)
+	if ( !skipAllReserve && qual_tbl[QUAL_REL].present )
+	{
+		snprintf(emsg,sizeof(emsg)-1,"Reserve commands are ignored when -relative mode selected");
+		err_msg(MSG_WARN,emsg);
+		skipAllReserve = 1;
+	}
+	while ( 1 )
     {
         if (lc_get_token(0,"%LLF- Premature EOF",0) == EOF )
             return EOF; /* always return EOF */
-        if (token_type == LC_TOK_STR) cn = token_value;
+        if (token_type == LC_TOK_STR)
+			cn = token_value;
         switch (state)
         {
         case 1: {      /* may be an address or "TO" */
@@ -862,8 +886,10 @@ int lc_reserve( void )
                     state = 2;   /* next thing must be an 'end' address */
                     continue;
                 }
-                add_to_reserve(begin,1l);   /* stick in reserved mem location */
-                state = 0;      /* fall through to state 0 */
+				if ( !skipAllReserve )
+					add_to_reserve(begin, 1l);   /* stick in reserved mem location */
+                state = 0;
+				/* intentionally fall through to state 0 */
             }
         case 0: {      /* maybe a ")", number or string */
                 if ((token_type == LC_TOK_CHAR) && (*token_pool == ')')) return EOL;
@@ -900,7 +926,8 @@ int lc_reserve( void )
                                   "END address must be greater than START address");
                         token_value = begin;
                     }
-                    add_to_reserve(begin,(uint32_t)token_value-begin+1l);
+					if ( !skipAllReserve )
+						add_to_reserve(begin, (uint32_t)token_value - begin + 1l);
                     state = 0;           /* back to normal */
                     continue;
                 }
@@ -916,8 +943,9 @@ int lc_reserve( void )
                         bad_token(tkn_ptr,
                                   "Ah come on, you can't reserve all of memory!");
                     }
-                    add_to_reserve((uint32_t)token_value,
-                                   (uint32_t)(-token_value));
+					if ( !skipAllReserve )
+						add_to_reserve((uint32_t)token_value,
+									   (uint32_t)(-token_value));
                     state = 0;           /* back to normal */
                     continue;
                 }
@@ -1017,7 +1045,7 @@ int lc_library(char **opt)
 /*************************************************************************
  * lc_eatit() - justs eats text until EOF or EOL
  */
-int lc_eatit( void )
+int lc_eatit( char **opt )
 /*
  * At entry:
  *	no requirements
@@ -1027,25 +1055,43 @@ int lc_eatit( void )
 {
     while (1)
     {
-        if (lc_get_token(1,"Premature EOF",0) == EOF ) return EOF;   /* always return EOF */
-        if (token_type == LC_TOK_CHAR && *token_pool == ')') return EOL;
+        if (lc_get_token(1,"Premature EOF",0) == EOF )
+			return EOF;   /* always return EOF */
+        if (token_type == LC_TOK_CHAR && *token_pool == ')')
+			return EOL;
     }
 }
 
-#define F(name) int name() {\
-   		bad_token(tkn_ptr,"Sorry, function not implemented yet");\
-	        lc_eatit();\
-   		return 0;\
-   		}
+static int noSuchFunction(char **opt)
+{
+	bad_token(tkn_ptr,"Sorry, function not implemented yet");
+	lc_eatit(opt);
+	return 0;
+}
 
-F(lc_memory)
-F(lc_segsize)
-F(lc_start)
-F(lc_group)
+static int lc_memory(char **opt)
+{
+	return noSuchFunction(opt);
+}
+
+static int lc_segsize(char **opt)
+{
+	return noSuchFunction(opt);
+}
+
+static int lc_start(char **opt)
+{
+	return noSuchFunction(opt);
+}
+
+static int lc_group(char **opt)
+{
+	return noSuchFunction(opt);
+}
 
 struct
 {
-    int (*lc_rout)();
+    int (*lc_rout)(char **opt);
     char *lc_str;
     uint8_t lc_len;
     unsigned int lc_flag:1;
@@ -1074,7 +1120,7 @@ struct
 int lc( void )
 {
     int i,j,k;
-    int (*f)();
+    int (*f)(char **opt);
     char **opt;
     char *opt_array[MAX_OPTS+1];     /* ptrs to option strings */
     opt_array[MAX_OPTS] = (char *)0; /* always 0 */
@@ -1084,12 +1130,15 @@ int lc( void )
     {
         if (!j++)
         {
-            if (get_text() == EOF) return EOF; /* prime the pump */
+            if (get_text() == EOF)
+				return EOF; /* prime the pump */
         }
-        if (lc_get_token(0,"",0) == EOF ) return EOF;
+        if (lc_get_token(0,"",0) == EOF )
+			return EOF;
         if (token_type != LC_TOK_STR)
         {
-            if (lc_pass != 0) bad_token(tkn_ptr,"Unrecognised construct");
+            if (lc_pass != 0)
+				bad_token(tkn_ptr,"Unrecognised construct");
             j = 0;             /* break to next line */
             continue;
         }
@@ -1097,17 +1146,15 @@ int lc( void )
         {
             if (token_value > lc_dispatch[i].lc_len) continue;
             k = strncmp(upc_token,lc_dispatch[i].lc_str,(int)token_value);
-            if (k != 0) continue;
+            if (k != 0)
+				continue;
             if (lc_pass == lc_dispatch[i].lc_flag)
-            {
                 f = lc_dispatch[i].lc_rout; 
-            }
             else
-            {
                 f = lc_eatit;
-            }
-            if (lc_get_token(1,"Premature EOF.",0) == EOF) return EOF;
-            opt = (char **)0;
+            if (lc_get_token(1,"Premature EOF.",0) == EOF)
+				return EOF;
+            opt = NULL;
             if (lc_dispatch[i].lc_opt)
             {
                 int cnt;
@@ -1136,13 +1183,9 @@ int lc( void )
                 inp_ptr = tkn_ptr;      /* re-process last token */
             }
             if (lc_dispatch[i].lc_opt)
-            {
                 (*f)(opt);          /* do the function */
-            }
             else
-            {
-                (*f)();
-            }
+                (*f)(NULL);
             j = 0;             /* break to next line */
             break;
         }         /* -- for	*/

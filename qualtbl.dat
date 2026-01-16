@@ -75,8 +75,8 @@ S,extern QualTable_t qual_tbl[QUAL_MAX];
 ;OP  Val Opt Num Neg Enum              Name,              OutIdx,        Comment
 A,    0,  0,  0,  0,  QUAL_OPT,        "OPTIONS",           0,           /* Option input file */
 A,    0,  0,  0,  0,  QUAL_LIB,        "LIBRARY",           0,			  /* Library input file */
-A,    1,  0,  0,  0,  QUAL_CROSS,      "CROSS_REFERENCE",	 0,			  /* Cross reference request */
-A,    1,  0,  0,  0,  QUAL_REL,        "RELATIVE",          0,			  /* Relative output */
+A,    1,  0,  0,  1,  QUAL_CROSS,      "CROSS_REFERENCE",	 0,			  /* Cross reference request */
+A,    1,  0,  0,  1,  QUAL_REL,        "RELATIVE",          0,			  /* Relative output */
 A,    1,  0,  0,  1,  QUAL_ERR,        "ERROR",             0,           /* Force display of undefined symbols */
 A,    1,  0,  0,  1,  QUAL_VLDA,       "VLDA",				 0,			  /* Create .vlda output (same as -binary) */
 A,    1,  0,  0,  1,  QUAL_OBJ,        "OBJECT",            0,           /* Default input is .ob vs. normal .ol */

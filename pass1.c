@@ -36,7 +36,7 @@ extern struct fn_struct *get_fn_pool();
 #endif
 
 char *target;           /* pointer to target string */
-char emsg[512];         /* space to build error messages */
+char emsg[EMSG_SIZE];         /* space to build error messages */
 char *inp_str;          /* place to hold input text */
 int  inp_str_size;
 char *inp_ptr=0;        /* pointer to next place to get token */
@@ -54,6 +54,7 @@ int cmd_code;           /* command code */
 struct seg_spec_struct *seg_spec_pool=0;  /* pointer to free segment space */
 DBG_seclist *dbg_sec_pool=0;
 int seg_spec_size;      /* size of segment pool */
+int haveLiteralPool;
 
 /******************************************************************
  * Pick up memory for special segment block storage
@@ -371,8 +372,13 @@ int get_token_c( void )
         default: {
                 if (isdigit(c))
                 {
-                    token_type = TOKEN_const;
-                    return(TOKEN_E_decnum);
+					token_type = TOKEN_const;
+					if ( c == '0' && (*inp_ptr = 'X' || *inp_ptr == 'x') )
+					{
+						++inp_ptr;	/* eat the 'x' */
+						return TOKEN_E_hexnum;
+					}
+                    return TOKEN_E_decnum;
                 }
                 break;
             }
@@ -1005,6 +1011,8 @@ int f1_len(int flag)
                 if ((seg_ptr=get_seg_spec_mem(sym_ptr)) == 0) break;
             }
             seg_ptr->seg_len = token_value;
+			if ( seg_ptr->sflg_literal && seg_ptr->seg_maxlen )
+				seg_ptr->seg_maxlen -= token_value;
         }
     }
     return(f1_eol());
@@ -1116,6 +1124,17 @@ int f1_seg(int flag)
             if (*s == 'l')
             {
                 seg_ptr->sflg_literal = 1; continue;
+				haveLiteralPool = 1;
+				if (lit_group == 0)
+				{
+					lit_group_nam = get_symbol_block(1);
+					lit_group_nam->ss_string = "Literal Pool";
+					lit_group = get_grp_ptr(lit_group_nam,0,0);
+					lit_group_nam->ss_fnd = current_fnd;
+					lit_group_nam->seg_spec->sflg_literal = 1;
+					lit_group_nam->seg_spec->seg_maxlen = 256*1024-32;
+				}
+				insert_intogroup(lit_group,sym_ptr,lit_group_nam);
             }
             if (*s == 'o')
             {
@@ -1305,7 +1324,9 @@ int f1_ext(int flag)
 int f1_test(int flag)
 /*
  * At entry:
- *	no requirements
+ *  flag = 0, generic test
+ *  flag = 1, branch offset out of range
+ *  flat = 2, generic out of range test
  * At exit:
  *	test expression inserted into tmp_file
  *
@@ -1317,7 +1338,7 @@ int f1_test(int flag)
 {
     int size;
     char *s=0;           /* pointer to pointer to string */
-    static int tmp_opr[3] = {TMP_TEST, TMP_BOFF, TMP_OOR};
+    static const int tmp_opr[3] = {TMP_TEST, TMP_BOFF, TMP_OOR};
 
     if (token_type != TOKEN_ascs)
     {

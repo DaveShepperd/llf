@@ -30,6 +30,7 @@ typedef struct
 
 #define MAX_LINES (64)
 
+#ifndef _SLICKEDIT_
 int main(int argc, char *argv[])
 {
 	char *str, *end, inBuf[256], tokBuf[sizeof(inBuf)];
@@ -229,4 +230,4 @@ int main(int argc, char *argv[])
 		  ,stdout);
 	return 0;	
 }
-
+#endif	/* _SLICKEDIT_ */

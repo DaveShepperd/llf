@@ -141,7 +141,7 @@ static void print_map_title( void ) {
 /**************************************************************************
  * PUTS_MAP - put a string to map file
  */
-void puts_map( char *string, int lines )
+void puts_map( const char *string, int lines )
 /*
  * At entry:
  *	string - pointer to text to write to map file
@@ -149,7 +149,7 @@ void puts_map( char *string, int lines )
  */
 {
     int i;
-    char *s;
+    const char *s;
     if (!map_fp) return;         /* easy out if no map file */
     if (!map_title)
     {
@@ -171,7 +171,7 @@ void puts_map( char *string, int lines )
         {
             while (*string)
             {
-                char *space=0;
+                const char *space=NULL;
 				int sLen;
                 s = string;
                 for (j=0; j < columns_per_line && *s; ++j, ++s)

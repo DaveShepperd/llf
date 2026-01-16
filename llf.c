@@ -80,7 +80,7 @@ static void vmstime( time_t *tptr )
  * well as stderr.
  */
 
-void err_msg(int severity, char *msg )
+void err_msg(int severity, const char *msg )
 /*
  * At entry:
  *	severity - low order 3 bits = error severity:
@@ -100,7 +100,8 @@ void err_msg(int severity, char *msg )
     static char sev_c[]="wseif";
     static char *sev_s[]= {"warn","success","error","info","fatal"};
 #endif
-    char lemsg[512],*lmp=lemsg;
+    char lemsg[512];
+	const char *lmp=lemsg;
     error_count[severity]++; /* always count the error */
     switch (severity)
     {

@@ -12,7 +12,7 @@
 		Version="1"
 		OutputFile="%bdllf"
 		CompilerConfigName="Latest Version"
-		Defines='"/DLLF" "/DM_UNIX" "/DEXTERNAL_PACKED_STRUCTS" "/D_ISOC99_SOURCE"'>
+		Defines='"/DLLF" "/DM_UNIX" "/DEXTERNAL_PACKED_STRUCTS" "/D_ISOC99_SOURCE" "/D_SLICKEDIT_"'>
 		<Menu>
 			<Target
 				Name="Compile"
@@ -36,9 +36,7 @@
 				Deletable="0"
 				SaveOption="SaveCurrent"
 				RunFromDir="%rw">
-				<Exec
-					CmdLine='gcc %xup -g -Wall -pedantic -Werror %~other -o "%o" %objs'
-					OtherOptions="-m32"/>
+				<Exec CmdLine='gcc %xup -g -Wall -pedantic -Werror -o "%o" %objs'/>
 			</Target>
 			<Target
 				Name="Build"
@@ -146,7 +144,7 @@
 		Version="1"
 		OutputFile="%bdllf"
 		CompilerConfigName="Latest Version"
-		Defines='"/DLLF" "/DM_UNIX" "/DEXTERNAL_PACKED_STRUCTS" "/D_ISOC99_SOURCE"'>
+		Defines='"/DLLF" "/DM_UNIX" "/DEXTERNAL_PACKED_STRUCTS" "/D_ISOC99_SOURCE" "/D_SLICKEDIT_"'>
 		<Menu>
 			<Target
 				Name="Compile"
@@ -349,9 +347,6 @@
 				Type="Makefile"/>
 			<F
 				N="Makefile.msys2"
-				Type="Makefile"/>
-			<F
-				N="Makefile.msys2-32"
 				Type="Makefile"/>
 			<F
 				N="Makefile.pi"
