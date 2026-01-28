@@ -373,7 +373,7 @@ int get_token_c( void )
                 if (isdigit(c))
                 {
 					token_type = TOKEN_const;
-					if ( c == '0' && (*inp_ptr = 'X' || *inp_ptr == 'x') )
+					if ( c == '0' && (*inp_ptr == 'X' || *inp_ptr == 'x') )
 					{
 						++inp_ptr;	/* eat the 'x' */
 						return TOKEN_E_hexnum;
