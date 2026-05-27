@@ -1640,35 +1640,42 @@ void object( int fd )
                     inp_minor = vid->vid_min;
                     if (inp_major != VLDA_MAJOR)
                     {
-                        sprintf(emsg,"Object format in file \"%s\" is incompatible. You must reassemble/recompile it.",
-                                current_fnd->fn_buff);
+                        snprintf(emsg,EMSG_SIZE-1,"Object format in file \"%s\" version %d.%d is incompatible. Must be a minimum %d.%d. It must be remade."
+                                ,current_fnd->fn_buff
+								 ,inp_major
+								 ,inp_minor
+								 ,VLDA_MAJOR
+								 ,VLDA_MINOR
+								);
                         err_msg(MSG_ERROR,emsg);
-                        break;
+						break;
                     }
                     if (inp_minor < VLDA_MINOR)
                     {
                         if (qual_tbl[QUAL_ERR].present)
                         {
-                            sprintf(emsg,"Object file format in \"%s\" is obsolete. Suggest you remake it.",
-                                    current_fnd->fn_buff);
+                            snprintf(emsg,EMSG_SIZE-1,"Object file format in \"%s\" version %d.%d is obsolete. Should be a minimum %d.%d. Suggest you remake it."
+                                    ,current_fnd->fn_buff
+									,inp_major
+									,inp_minor
+									,VLDA_MAJOR
+									,VLDA_MINOR
+									);
                             err_msg(MSG_WARN,emsg);
                         }
                     }
-                    else
-                    {
-                        if (vid->vid_errors != 0)
-                        {
-                            sprintf(emsg,"%d compilation/assembly error(s) detected during make of \"%s\"",
-                                    vid->vid_errors,current_fnd->fn_buff);
-                            err_msg(MSG_WARN,emsg);
-                        }
-                        if (vid->vid_warns != 0)
-                        {
-                            sprintf(emsg,"%d compilation/assembly warning(s) detected during make of \"%s\"",
-                                    vid->vid_warns,current_fnd->fn_buff);
-                            err_msg(MSG_WARN,emsg);
-                        }
-                    }
+					if (vid->vid_errors != 0)
+					{
+						sprintf(emsg,"%d compilation/assembly error(s) detected during make of \"%s\"",
+								vid->vid_errors,current_fnd->fn_buff);
+						err_msg(MSG_WARN,emsg);
+					}
+					if (vid->vid_warns != 0)
+					{
+						sprintf(emsg,"%d compilation/assembly warning(s) detected during make of \"%s\"",
+								vid->vid_warns,current_fnd->fn_buff);
+						err_msg(MSG_WARN,emsg);
+					}
                     d = token_pool;
                     current_fnd->fn_xlator = d;
                     s = inp_str+vid->vid_image;
